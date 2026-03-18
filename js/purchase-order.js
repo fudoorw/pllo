@@ -445,7 +445,7 @@ function handleSearch(idx, field, query) {
             if (aCell) aCell.textContent = '0';
         }
 
-        if (q.length > 0) {
+        if (q.length > 0 && field === 'description') {
             showProductSearchDropdown(idx, q, field);
         } else {
             hideProductSearchDropdown();
@@ -489,7 +489,7 @@ function showProductSearchDropdown(index, query, field = 'description') {
             if (!p) return false;
             if (field === 'itemCode') return p.code && p.code.toLowerCase() === q;
             if (field === 'barcode') return p.barcodes && p.barcodes.some(b => b.toLowerCase() === q);
-            return p.name && p.name.toLowerCase().includes(q);
+            return false;
         })
         .slice(0, 15);
 
