@@ -180,7 +180,7 @@
                 <img id="printLogo" src="" alt="Logo" class="max-h-16 object-contain hidden">
             </div>
             <div class="w-1/3 text-center">
-                <h2 id="printStoreName" class="font-bold text-blue-800 text-lg mb-1 italic">PKSD-MAIN POS SYSTEM</h2>
+                <h2 id="printStoreName" class="font-bold text-blue-800 text-lg mb-1 italic">Nova POS SYSTEM</h2>
                 <div id="printStoreAddress" class="text-[0.85em] text-gray-700 italic">No address provided</div>
                 <div id="printStorePhone" class="text-[0.85em] text-gray-700"></div>
                 <div id="printStoreEmail" class="text-[0.85em] text-gray-700"></div>
@@ -324,7 +324,7 @@
                 // Fetch Settings
                 const { data: settings } = await db.from('settings').select('*').limit(1).single();
                 if (settings) {
-                    document.getElementById('printStoreName').textContent = settings.store_name || 'PKSD-MAIN POS SYSTEM';
+                    document.getElementById('printStoreName').textContent = settings.store_name || 'Nova POS SYSTEM';
                     document.getElementById('printStoreName').classList.remove('italic');
                     const addr = [settings.city, settings.state, settings.country, settings.postal_code].filter(Boolean).join(', ');
                     document.getElementById('printStoreAddress').textContent = addr || 'No address provided';

@@ -144,7 +144,7 @@
                     LOGO</div>
             </div>
             <div class="w-1/3 text-center">
-                <h2 id="printStoreName" class="font-bold text-indigo-900 text-xl mb-1">PKSD-MAIN POS SYSTEM</h2>
+                <h2 id="printStoreName" class="font-bold text-indigo-900 text-xl mb-1">Nova POS SYSTEM</h2>
                 <div id="printStoreAddress" class="text-[0.85em] text-gray-600">No address provided</div>
                 <div id="printStorePhone" class="text-[0.85em] text-gray-600"></div>
                 <div id="printStoreEmail" class="text-[0.85em] text-gray-600"></div>
@@ -261,7 +261,7 @@
         <!-- Bottom Greeting -->
         <div
             class="text-center mt-12 py-3 bg-indigo-50 border-y border-indigo-100 text-indigo-800 font-bold italic tracking-widest uppercase text-xs">
-            Software by PKSD-MAIN POS - Thank you for your business!
+            Software by Nova POS - Thank you for your business!
         </div>
     </page>
 
@@ -296,7 +296,7 @@
                 // Fetch Settings
                 const { data: settings } = await db.from('settings').select('*').limit(1).single();
                 if (settings) {
-                    document.getElementById('printStoreName').textContent = settings.store_name || 'PKSD-MAIN POS';
+                    document.getElementById('printStoreName').textContent = settings.store_name || 'Nova POS';
                     const addr = [settings.city, settings.state, settings.country, settings.postal_code].filter(Boolean).join(', ');
                     document.getElementById('printStoreAddress').textContent = addr || 'No address provided';
                     document.getElementById('printStorePhone').textContent = settings.store_phone ? `Phone: ${settings.store_phone}` : '';

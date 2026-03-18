@@ -1,7 +1,7 @@
-# PROJ: PKSD POS System - Architecture & Context for AI Prompt Injection
+# PROJ: Nova POS POS System - Architecture & Context for AI Prompt Injection
 
 ## 1. Project Overview
-PKSD POS is a robust, web-based Point of Sale (POS) system designed for retail and inventory management. It features multi-warehouse support, product variations, barcode scanning, sales/purchase flows, and comprehensive reporting. The backend utilizes Supabase for authentication, real-time database, and serverless functions.
+Nova POS POS is a robust, web-based Point of Sale (POS) system designed for retail and inventory management. It features multi-warehouse support, product variations, barcode scanning, sales/purchase flows, and comprehensive reporting. The backend utilizes Supabase for authentication, real-time database, and serverless functions.
 
 ## 2. Technology Stack
 - **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6+). No heavy frameworks (React/Vue/Angular).
