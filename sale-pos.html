@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Today's Sales</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        :root {
+            /* Excel Theme Variables */
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #34d399;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sheet-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        /* Toolbar - Spreadsheet Styled */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            height: 44px;
+            flex-shrink: 0;
+        }
+
+        .toolbar-left,
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .view-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn {
+            height: 30px;
+            padding: 0 12px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-light);
+        }
+
+        .btn-pos {
+            background: var(--primary-dark);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-pos:hover {
+            background: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        /* The Grid */
+        .sheet-wrapper {
+            flex: 1;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-color);
+            overflow: auto;
+            position: relative;
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+            font-size: 0.8rem;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 10px 8px;
+            text-align: left;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            height: 36px;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .cell {
+            padding: 0 10px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .cell-number {
+            justify-content: flex-end;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+
+        tr:hover td {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        /* Status Pills */
+        .status-pill {
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-paid {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-partial {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-unpaid {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .voucher-tag {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--primary-light);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* Footer Totals */
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-table td {
+            padding: 10px 12px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .total-label {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 28px;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            justify-content: space-between;
+            flex-shrink: 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 180px;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            line-height: 1;
+        }
+
+        .user-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #fff;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sheet-container">
+        <!-- Toolbar -->
+        <div class="toolbar" style="height: 80px; padding: 0 20px;">
+            <div class="toolbar-left" style="gap: 20px;">
+                <div class="view-title" style="flex-direction: column; align-items: flex-start; gap: 2px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-calendar-day"></i> Sales List
+                    </div>
+                    <span id="dateDisplay"
+                        style="color: var(--text-muted); font-size: 0.75rem; font-weight: 500; margin-left: 0;"></span>
+                </div>
+                <!-- Date Filter Input -->
+                <div
+                    style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <i class="fas fa-filter" style="color: var(--primary-light); font-size: 0.8rem;"></i>
+                    <input type="text" id="dateFilter" placeholder="Select Date"
+                        style="background: transparent; border: none; color: var(--text-primary); font-size: 0.85rem; font-weight: 600; width: 100px; outline: none; cursor: pointer;">
+                </div>
+            </div>
+
+            <div class="toolbar-right">
+                <div class="stat-card" style="min-width: 140px; padding: 8px 16px;">
+                    <span class="stat-label">Total Sales</span>
+                    <span id="headerTotalAmount" class="stat-value" style="font-size: 1.2rem;">0</span>
+                </div>
+                <div class="user-badge" style="height: 48px;">
+                    <div class="user-avatar" style="width: 32px; height: 32px;">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column;">
+                        <span
+                            style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Operator</span>
+                        <span id="currentCounterName" class="user-name">MY SALES</span>
+                    </div>
+                </div>
+                <button class="btn" onclick="refreshSales()" style="height: 48px; padding: 0 16px;">
+                    <i class="fas fa-sync-alt"></i> REFRESH
+                </button>
+                <button class="btn btn-pos" onclick="backToPOS()" style="height: 48px; padding: 0 16px;">
+                    <i class="fas fa-times"></i> CLOSE
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Grid -->
+        <div class="sheet-wrapper">
+            <table id="salesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 150px;">DATE/TIME</th>
+                        <th>CUSTOMER</th>
+                        <th style="width: 130px;">VOUCHER</th>
+                        <th style="width: 100px; text-align: right;">SUBTOTAL</th>
+                        <th style="width: 100px; text-align: right;">DISCOUNT</th>
+                        <th style="width: 100px; text-align: right;">NET TOTAL</th>
+                        <th style="width: 100px; text-align: right;">PAID</th>
+                        <th style="width: 100px; text-align: right;">DUE / REMAIN</th>
+                        <th style="width: 90px;">STATUS</th>
+                        <th style="width: 80px;">METHOD</th>
+                        <th style="width: 100px;">CASHIER</th>
+                        <th style="width: 80px; text-align: center;">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody id="salesBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Sticky Footer Totals -->
+        <table class="footer-table">
+            <tr>
+                <td colspan="3" class="total-label" style="text-align: right;">GRAND TOTALS</td>
+                <td id="footerSubtotal" class="cell-number" style="width: 100px;">0</td>
+                <td id="footerDiscount" class="cell-number" style="width: 100px; color: var(--danger);">0</td>
+                <td id="footerNetTotal" class="cell-number" style="width: 100px; color: var(--primary-light);">0</td>
+                <td id="footerPaidAmount" class="cell-number" style="width: 100px; color: var(--success);">0</td>
+                <td id="footerDue" class="cell-number" style="width: 100px; color: var(--warning);">0</td>
+                <td colspan="4"></td>
+            </tr>
+            <tr style="border-top: 1px solid var(--border-color);">
+                <td colspan="7" style="text-align: right; color: var(--text-muted); font-size: 0.7rem;">PAYMENT METHOD TOTALS:</td>
+                <td colspan="5">
+                    <div style="display: flex; gap: 20px; justify-content: flex-end;">
+                        <span style="color: var(--primary-light);">CASH: <span id="footerCash">0</span></span>
+                        <span style="color: #60a5fa;">K-PAY: <span id="footerKPay">0</span></span>
+                        <span style="color: #818cf8;">WAVE: <span id="footerWave">0</span></span>
+                        <span style="color: #f472b6;">CARD/OTHER: <span id="footerOther">0</span></span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span>
+                <div class="sync-dot"></div> LIVE UPDATES ENABLED
+            </span>
+            <span>TODAY'S TRANSACTIONS: <strong id="recordCount" style="color: var(--primary-light);">0</strong></span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/app-config.js"></script>
+
+    <script>
+        let enforcingCounterId = null;
+        let datePicker = null;
+        let userMap = {};
+
+        function backToPOS() {
+            // Send message to parent (pos.html) to close the internal view
+            // This is the ONLY secure way for cross-origin (file:// or different domains)
+            window.parent.postMessage('CLOSE_INTERNAL_SALES', '*');
+        }
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            enforcingCounterId = urlParams.get('counter');
+
+            // Initialize Flatpickr
+            datePicker = flatpickr("#dateFilter", {
+                dateFormat: "d M y",
+                defaultDate: "today",
+                theme: "dark",
+                onChange: function (selectedDates, dateStr, instance) {
+                    refreshSales();
+                }
+            });
+
+            refreshSales();
+        }
+
+        async function refreshSales() {
+            const container = document.getElementById('salesBody');
+            container.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 2rem;">Loading sales...</td></tr>';
+
+            // Load user names for mapping if not already loaded
+            if (Object.keys(userMap).length === 0) {
+                try {
+                    const { data: profiles } = await supabase.from('user_profiles').select('user_id, display_name');
+                    if (profiles) {
+                        profiles.forEach(p => userMap[p.user_id] = p.display_name);
+                    }
+                } catch (e) { console.error("Error loading user profiles:", e); }
+            }
+
+            const selectedDate = datePicker ? datePicker.selectedDates[0] : new Date();
+            const startOfDay = new Date(selectedDate);
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const endOfDay = new Date(selectedDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            try {
+                let query = supabase
+                    .from('transactions')
+                    .select('*, customers(name)')
+                    .gte('created_at', startOfDay.toISOString())
+                    .lte('created_at', endOfDay.toISOString())
+                    .order('created_at', { ascending: false });
+
+                if (enforcingCounterId) {
+                    query = query.or(`user_id.eq.${enforcingCounterId},counter.eq.${enforcingCounterId}`);
+                    document.getElementById('currentCounterName').textContent = enforcingCounterId.toUpperCase();
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+                renderSales(data);
+
+                // Update date display subtitle
+                document.getElementById('dateDisplay').textContent = selectedDate.toLocaleDateString(undefined, {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                }).toUpperCase();
+
+            } catch (err) {
+                console.error('Error fetching sales:', err);
+                container.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 2rem; color: var(--danger);">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        function renderSales(sales) {
+            const body = document.getElementById('salesBody');
+            body.innerHTML = '';
+
+            let totalSub = 0, totalDiscount = 0, totalNet = 0, totalPaid = 0, totalDue = 0;
+            let cashTotal = 0, kpayTotal = 0, waveTotal = 0, otherTotal = 0;
+
+            sales.forEach((sale) => {
+                const subtotal = sale.subtotal || 0;
+                const discount = sale.discount_amount || 0;
+                const net = sale.total_amount || 0;
+                const paid = sale.paid_amount || 0;
+                const remain = Math.max(0, net - paid);
+                
+                // Status Logic (aligned with sale.html)
+                let status = 'UNPAID';
+                let statusClass = 'status-unpaid';
+                
+                if (paid >= (net - 0.5)) {
+                    status = 'PAID';
+                    statusClass = 'status-paid';
+                } else if (paid > 0) {
+                    status = 'PARTIAL';
+                    statusClass = 'status-partial';
+                }
+
+                const method = sale.payment_method || 'Cash';
+                
+                totalSub += subtotal;
+                totalDiscount += discount;
+                totalNet += net;
+                totalPaid += paid;
+                totalDue += remain;
+
+                // Method Totals
+                if (method === 'Cash') cashTotal += net;
+                else if (method.includes('K-Pay')) kpayTotal += net;
+                else if (method.includes('Wave')) waveTotal += net;
+                else otherTotal += net;
+
+                const customerDisplay = sale.customers?.name || sale.customer_name || 'Walk-in';
+                const cashierDisplay = userMap[sale.user_id] || sale.cashier || sale.counter || '-';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><div class="cell">${new Date(sale.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}</div></td>
+                    <td><div class="cell" style="font-weight: 600;">${customerDisplay}</div></td>
+                    <td><div class="cell"><span class="voucher-tag">${sale.voucher_no || 'N/A'}</span></div></td>
+                    <td><div class="cell cell-number">${Math.round(subtotal).toLocaleString()}</div></td>
+                    <td><div class="cell cell-number" style="color: var(--danger);">${Math.round(discount).toLocaleString()}</div></td>
+                    <td><div class="cell cell-number">${Math.round(net).toLocaleString()}</div></td>
+                    <td><div class="cell cell-number" style="color: var(--success);">${Math.round(paid).toLocaleString()}</div></td>
+                    <td><div class="cell cell-number" style="color: var(--warning);">${Math.round(remain).toLocaleString()}</div></td>
+                    <td><div class="cell"><span class="status-pill ${statusClass}">${status}</span></div></td>
+                    <td><div class="cell">${method}</div></td>
+                    <td><div class="cell">${cashierDisplay}</div></td>
+                    <td>
+                        <div class="cell" style="justify-content: center;">
+                            <button class="btn btn-sm" style="background: var(--primary-dark); border-color: var(--primary); color: white;" onclick="printVoucher('${sale.id}')">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('footerSubtotal').textContent = Math.round(totalSub).toLocaleString();
+            document.getElementById('footerDiscount').textContent = Math.round(totalDiscount).toLocaleString();
+            document.getElementById('footerNetTotal').textContent = Math.round(totalNet).toLocaleString();
+            document.getElementById('footerPaidAmount').textContent = Math.round(totalPaid).toLocaleString();
+            document.getElementById('footerDue').textContent = Math.round(totalDue).toLocaleString();
+            document.getElementById('headerTotalAmount').textContent = Math.round(totalNet).toLocaleString();
+            
+            document.getElementById('footerCash').textContent = Math.round(cashTotal).toLocaleString();
+            document.getElementById('footerKPay').textContent = Math.round(kpayTotal).toLocaleString();
+            document.getElementById('footerWave').textContent = Math.round(waveTotal).toLocaleString();
+            document.getElementById('footerOther').textContent = Math.round(otherTotal).toLocaleString();
+            
+            document.getElementById('recordCount').textContent = sales.length;
+        }
+
+        function printVoucher(id) {
+            // Trigger print via parent POS
+            window.parent.postMessage({ type: 'PRINT_VOUCHER', id: id }, '*');
+        }
+
+
+        async function deleteSale(saleId) {
+            if (!confirm('Are you sure you want to delete this sale?')) return;
+            try {
+                // Delete dependent items and payments first due to FK constraints
+                await supabase.from('transaction_items').delete().eq('transaction_id', saleId);
+                await supabase.from('transaction_payments').delete().eq('transaction_id', saleId);
+                
+                const { error } = await supabase.from('transactions').delete().eq('id', saleId);
+                if (error) throw error;
+                refreshSales();
+            } catch (e) {
+                alert('Delete failed: ' + e.message);
+            }
+        }
+
+        function editSale(saleId) {
+            window.parent.postMessage({ type: 'EDIT_SALE', id: saleId }, '*');
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'REFRESH_SALES') {
+                enforcingCounterId = event.data.counterId;
+                refreshSales();
+            }
+        });
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>

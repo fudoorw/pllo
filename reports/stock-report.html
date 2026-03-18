@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+    <style>
+        .tshell table {
+            min-width: 1200px;
+            width: max-content;
+        }
+
+        .tshell th,
+        .tshell td {
+            padding: 8px 10px;
+        }
+
+        thead th {
+            white-space: nowrap;
+            vertical-align: middle;
+            line-height: normal;
+            font-size: 11px;
+        }
+
+        /* Responsive Column widths */
+        th:nth-child(1) {
+            width: 40px;
+        }
+
+        /* # */
+        th:nth-child(2) {
+            width: 100px;
+        }
+
+        /* Item Code */
+        th:nth-child(3) {
+            width: 110px;
+        }
+
+        /* Barcode */
+        th:nth-child(4) {
+            width: 220px;
+        }
+
+        /* Description */
+        th:nth-child(5) {
+            width: 110px;
+        }
+
+        /* Category */
+        th:nth-child(6) {
+            width: 110px;
+        }
+
+        /* Sub-Category */
+        th:nth-child(7) {
+            width: 100px;
+        }
+
+        /* Brand */
+        th:nth-child(8) {
+            width: 100px;
+        }
+
+        /* Cost */
+        th:nth-child(9) {
+            width: 100px;
+        }
+
+        /* Price */
+        th:nth-child(10) {
+            width: 90px;
+        }
+
+        /* Current Stock */
+        th:nth-child(11) {
+            width: 120px;
+        }
+
+        /* Cost by Total */
+        th:nth-child(12) {
+            width: 120px;
+        }
+
+        /* Price by Total */
+        th:nth-child(13) {
+            width: 110px;
+        }
+
+        /* Shop */
+        th:nth-child(14) {
+            width: 110px;
+        }
+
+        /* Supplier */
+        th:nth-child(15) {
+            width: 120px;
+        }
+
+        /* Remark */
+    </style>
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-boxes" style="color:var(--blue)"></i> Stock Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Stock Report Detail</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Total Products</div>
+                <div class="ds-v" id="h-pd-total" style="color:var(--blue)">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Stock Value</div>
+                <div class="ds-v" id="h-pd-cost-val" style="color:var(--green)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Retail Value</div>
+                <div class="ds-v" id="h-pd-sale-val" style="color:var(--yellow)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Low Stock</div>
+                <div class="ds-v" id="h-pd-low" style="color:var(--red)">0</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="row-num">#</th>
+                        <th>Item Code</th>
+                        <th>Barcode</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Sub-Category</th>
+                        <th>Brand</th>
+                        <th>Cost</th>
+                        <th>Price</th>
+                        <th>Current Stock</th>
+                        <th>Cost by Total</th>
+                        <th>Price by Total</th>
+                        <th>Shop</th>
+                        <th>Supplier</th>
+                        <th>Remark</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-stock-report"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-stock-report"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'stock-report';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            // Handle stats
+            const total = DATA.length;
+            const low = DATA.filter(d => d.qty < 20).length;
+            const costVal = DATA.reduce((a, b) => a + ((b.qty || 0) * (b.cost || 0)), 0);
+            const saleVal = DATA.reduce((a, b) => a + ((b.qty || 0) * (b.price || 0)), 0);
+
+            document.getElementById('h-pd-total').innerText = total;
+            document.getElementById('h-pd-low').innerText = low;
+            document.getElementById('h-pd-cost-val').innerText = fmt(costVal) + ' Ks';
+            document.getElementById('h-pd-sale-val').innerText = fmt(saleVal) + ' Ks';
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                const startNum = pg * PS + 1;
+                body.innerHTML = sl.map((r, idx) => {
+                    const costByTotal = (r.qty || 0) * (r.cost || 0);
+                    const priceByTotal = (r.qty || 0) * (r.price || 0);
+                    return `
+                        <tr>
+                            <td class="row-num">${startNum + idx}</td>
+                            <td><div class="cell-container"><b>${r.itemCode || '-'}</b></div></td>
+                            <td><div class="cell-container">${r.barcode || '-'}</div></td>
+                            <td><div class="cell-container">${r.description || '-'}</div></td>
+                            <td><div class="cell-container">${r.category || '-'}</div></td>
+                            <td><div class="cell-container">${r.subCategory || '-'}</div></td>
+                            <td><div class="cell-container">${r.brand || '-'}</div></td>
+                            <td><div class="cell-container ta">${fmt(r.cost)}</div></td>
+                             <td><div class="cell-container ta" style="color:var(--green)">${fmt(r.price)}</div></td>
+                             <td><div class="cell-container ta"><b>${fmt(r.qty)}</b></div></td>
+                             <td><div class="cell-container ta">${fmt(costByTotal)}</div></td>
+                             <td><div class="cell-container ta" style="color:var(--yellow)"><b>${fmt(priceByTotal)}</b></div></td>
+                            <td><div class="cell-container">${r.shop || 'Main Shop'}</div></td>
+                            <td><div class="cell-container">${r.supplier || '-'}</div></td>
+                            <td><div class="cell-container">${r.remark || '-'}</div></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

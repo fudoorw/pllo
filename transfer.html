@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Transfer - Excel Style</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
+            --transition-smooth: all 0.1s ease-out;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Glass Toolbar */
+        .glass-toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            padding: 6px 16px !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            height: auto !important;
+            line-height: normal !important;
+            box-sizing: border-box !important;
+            text-transform: uppercase !important;
+        }
+
+        .btn-indigo {
+            background: var(--gradient-primary) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+        }
+
+        .btn-indigo:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: var(--shadow-glow) !important;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: #f1f5f9 !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .btn-amber {
+            background: rgba(245, 158, 11, 0.1) !important;
+            color: #f59e0b !important;
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
+
+        .btn-amber:hover {
+            background: rgba(245, 158, 11, 0.2) !important;
+        }
+
+        .sync-status {
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Form Controls */
+        .form-section {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .form-control option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Grid Layout */
+        .sheet-container {
+            flex: 1;
+            overflow: hidden;
+            background: var(--bg-primary);
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 0.8rem 12px;
+            text-align: left;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            padding: 0;
+            height: 48px;
+            color: var(--text-primary);
+            transition: var(--transition-smooth);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .cell-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0;
+            position: relative;
+        }
+
+        .cell-editable {
+            cursor: text;
+            position: relative;
+            transition: var(--transition-smooth);
+        }
+
+        .cell-editable:hover {
+            background: rgba(99, 102, 241, 0.12) !important;
+        }
+
+        /* Number Input Styling */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: none;
+        }
+
+        .premium-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 0 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .premium-input:focus {
+            background: rgba(99, 102, 241, 0.1);
+            outline: 2px solid var(--primary);
+            outline-offset: -2px;
+        }
+
+        /* Product Search Input Enhancement */
+        .product-search-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 0 12px;
+            font-size: 13px;
+            outline: none;
+            font-family: inherit;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+        }
+
+        .product-search-input:focus {
+            background: rgba(99, 102, 241, 0.08);
+            box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Footer Summary */
+        .footer-summary {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            z-index: 100;
+        }
+
+        .total-value {
+            color: var(--primary-light);
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        /* Dropdown */
+        .dropdown-menu {
+            position: fixed;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            display: none;
+            backdrop-filter: blur(10px);
+            animation: fadeInQuick 0.1s ease-out;
+        }
+
+        @keyframes fadeInQuick {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.1s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary-light);
+        }
+
+        .dropdown-item.selected {
+            background: var(--primary) !important;
+            color: white !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Dropdown Highlight */
+        .dropdown-item:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Add Product Button */
+        .add-product-btn {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-light);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .add-product-btn:hover {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Delete Button */
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .pulse-once {
+            animation: pulse 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body onload="init()">
+
+    <div class="glass-toolbar" id="topToolbar"
+        style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <span id="syncStatus" class="sync-status">Ready</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <button class="btn btn-secondary" onclick="importData()">
+                <i class="fas fa-file-import"></i> Import
+            </button>
+            <button class="btn btn-secondary" onclick="exportData()">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+            <button class="btn btn-secondary" onclick="addNewRow()">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+            <button class="btn btn-primary" onclick="saveTransfer()" id="saveBtn">
+                <i class="fas fa-save"></i> Save Transfer
+            </button>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="form-group">
+            <label>Filter: Date</label>
+            <input type="text" id="filterDate" class="form-control" placeholder="Select Date Range">
+        </div>
+        <div class="form-group">
+            <label>Filter: From Warehouse</label>
+            <select id="fromWarehouseFilter" class="form-control" onchange="loadTransfers()">
+                <option value="">All Warehouses</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Filter: To Warehouse</label>
+            <select id="toWarehouseFilter" class="form-control" onchange="loadTransfers()">
+                <option value="">All Warehouses</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="sheet-container">
+        <table id="gridTable">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;">#</th>
+                    <th style="width: 10%;">Date</th>
+                    <th style="width: 30%;">Item / Barcode</th>
+                    <th style="width: 60px; text-align: center;">QTY</th>
+                    <th style="width: 12%; text-align: center;">FROM</th>
+                    <th style="width: 12%; text-align: center;">TO</th>
+                    <th style="width: 10%; text-align: right;">Cost</th>
+                    <th style="width: 12%; text-align: right;">Amount</th>
+                    <th style="width: 14%;">Remark</th>
+                    <th style="width: 40px;"></th>
+                </tr>
+            </thead>
+            <tbody id="gridBody">
+                <!-- Rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer-summary" id="footerSummary">
+        <span>Total Amount:</span>
+        <span class="total-value" id="totalAmount">0.00 Ks</span>
+    </div>
+
+    <div id="ddMenu" class="dropdown-menu"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script>
+        const SCHEMA = [
+            { id: 'date', label: 'Date', width: '100px', readOnly: true },
+            { id: 'product_id', label: 'Product', width: 'auto', type: 'dropdown' },
+            { id: 'quantity', label: 'QTY', width: '80px', type: 'number' },
+            { id: 'from_warehouse_id', label: 'From Wh', width: '130px', type: 'warehouse_select' },
+            { id: 'to_warehouse_id', label: 'To Wh', width: '130px', type: 'warehouse_select' },
+            { id: 'cost', label: 'Cost', width: '100px', readOnly: true },
+            { id: 'amount', label: 'Amount', width: '120px', readOnly: true },
+            { id: 'remark', label: 'Remark', width: 'auto', type: 'text' }
+        ];
+
+        let state = {
+            data: [],
+            products: [],
+            warehouses: [],
+            editingRow: null,
+            editingCol: null,
+            dropdownSelectedIndex: -1,
+            dropdownFiltered: []
+        };
+
+        function updateSyncStatus(status, type = 'success') {
+            const statusEl = document.getElementById('syncStatus');
+            if (statusEl) {
+                statusEl.textContent = status;
+                statusEl.className = 'sync-status';
+                if (type === 'pending') {
+                    statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
+                    statusEl.style.borderColor = 'rgba(245, 158, 11, 0.2)';
+                    statusEl.style.color = 'var(--warning)';
+                } else if (type === 'error') {
+                    statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    statusEl.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                    statusEl.style.color = 'var(--error)';
+                } else {
+                    statusEl.style.background = 'rgba(16, 185, 129, 0.1)';
+                    statusEl.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                    statusEl.style.color = 'var(--success)';
+                }
+            }
+        }
+
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        async function init() {
+            console.log('Transfer init starting...');
+            try {
+                if (!window.supabase) {
+                    console.log('Supabase not found, skipping data load');
+                    addNewRow();
+                    return;
+                }
+                updateSyncStatus('Loading...', 'pending');
+                checkEmbeddedMode();
+
+                // Initialize flatpickr for filter
+                if (window.flatpickr) {
+                    flatpickr("#filterDate", {
+                        mode: "range",
+                        dateFormat: "Y-m-d",
+                        onChange: loadTransfers
+                    });
+                }
+
+                await fetchWarehouses();
+                await fetchProducts();
+                await loadTransfers();
+
+                updateSyncStatus('Ready');
+            } catch (err) {
+                console.error("Initialization error:", err);
+                updateSyncStatus('Error: ' + err.message, 'error');
+                addNewRow();
+            }
+        }
+
+        function checkEmbeddedMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'embedded') {
+                // Instead of hiding the whole toolbar, we might just want to hide the 'Back' button
+                // but keep Add Product and Save Transfer
+                const backBtn = document.querySelector('button[onclick="goBack()"]');
+                if (backBtn) backBtn.classList.add('hidden');
+            }
+        }
+
+        async function fetchWarehouses() {
+            const { data, error } = await supabase.from('warehouses').select('*').order('name');
+            if (error) {
+                console.error('Error fetching warehouses:', error);
+                throw new Error('Failed to load warehouses: ' + error.message);
+            }
+            state.warehouses = data || [];
+
+            const fromWhFilter = document.getElementById('fromWarehouseFilter');
+            const toWhFilter = document.getElementById('toWarehouseFilter');
+
+            // Clear existing options
+            fromWhFilter.innerHTML = '<option value="">All Warehouses</option>';
+            toWhFilter.innerHTML = '<option value="">All Warehouses</option>';
+
+            state.warehouses.forEach(wh => {
+                const opt = new Option(wh.name, wh.id);
+                fromWhFilter.add(opt.cloneNode(true));
+                toWhFilter.add(opt);
+            });
+        }
+
+        async function loadTransfers() {
+            updateSyncStatus('Refreshing...', 'pending');
+            try {
+                const fromFilter = document.getElementById('fromWarehouseFilter').value;
+                const toFilter = document.getElementById('toWarehouseFilter').value;
+                const dateFilter = document.getElementById('filterDate').value;
+
+                let query = supabase
+                    .from('transfer_items')
+                    .select(`
+                        id,
+                        transfer_id,
+                        product_id,
+                        quantity,
+                        unit_cost,
+                        subtotal,
+                        remark,
+                        transfers!inner (
+                            id,
+                            date,
+                            from_warehouse_id,
+                            to_warehouse_id
+                        ),
+                        products (
+                            name,
+                            item_code,
+                            brand_id
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (fromFilter) query = query.eq('transfers.from_warehouse_id', fromFilter);
+                if (toFilter) query = query.eq('transfers.to_warehouse_id', toFilter);
+
+                if (dateFilter && dateFilter.includes(' to ')) {
+                    const [start, end] = dateFilter.split(' to ');
+                    query = query.gte('transfers.date', start).lte('transfers.date', end);
+                } else if (dateFilter) {
+                    query = query.eq('transfers.date', dateFilter);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                // Map historical items to our state format
+                const historicalRecords = (data || []).map(item => ({
+                    id: item.id,
+                    transfer_id: item.transfer_id,
+                    saved: true,
+                    date: ((d) => { if (!d) return '-'; const dt = new Date(d); const day = String(dt.getDate()).padStart(2, '0'); const mon = dt.toLocaleString('en-US', { month: 'short' }); return day + '-' + mon + '-' + dt.getFullYear(); })(item.transfers.date),
+                    product_id: item.product_id,
+                    product_name: item.products?.name || 'Unknown Product',
+                    quantity: item.quantity,
+                    from_warehouse_id: item.transfers.from_warehouse_id,
+                    to_warehouse_id: item.transfers.to_warehouse_id,
+                    cost: item.unit_cost,
+                    amount: item.subtotal,
+                    remark: item.remark || ''
+                }));
+
+                // Keep only the current unsaved rows (those without .saved flag), 
+                // but if we are loading for the first time or refreshing, we might want to clear or append.
+                // For a list view, we want to show historical + maybe 1-2 empty rows at the bottom for new entries.
+
+                const unsavedRows = state.data.filter(r => !r.saved && r.product_id);
+                state.data = [...unsavedRows, ...historicalRecords];
+
+                // Ensure at least one empty row at the top
+                const hasEmpty = state.data.some(r => !r.saved && !r.product_id);
+                if (!hasEmpty) {
+                    addNewRow(true);
+                }
+
+                renderBody();
+
+                updateSyncStatus('Ready');
+            } catch (err) {
+                console.error("Load transfers error:", err);
+                updateSyncStatus('Error: ' + err.message, 'error');
+            }
+        }
+
+
+        async function fetchProducts() {
+            console.log('Fetching brands...');
+            const { data: brands, error: brandsError } = await supabase.from('brands').select('id, name');
+            if (brandsError) {
+                console.error('Error fetching brands:', brandsError);
+                throw new Error('Failed to load brands: ' + brandsError.message);
+            }
+            console.log('Brands loaded:', brands?.length || 0);
+            state.brands = brands || [];
+            const brandMap = {};
+            (brands || []).forEach(b => brandMap[b.id] = b.name);
+
+            console.log('Fetching products...');
+            let allData = [];
+            let from = 0;
+            const step = 1000;
+            while (true) {
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('id, name, code, item_code, barcodes, cost, price, stock, unit, unit_id, brand_id')
+                    .range(from, from + step - 1);
+                if (error) {
+                    console.error('Fetch products error:', error);
+                    throw new Error('Failed to load products: ' + error.message);
+                }
+                if (!data || data.length === 0) break;
+                allData = allData.concat(data.map(p => ({
+                    ...p,
+                    brand_name: brandMap[p.brand_id] || ''
+                })));
+                if (data.length < step) break;
+                from += step;
+            }
+            console.log('Products loaded:', allData.length);
+            state.products = allData;
+        }
+
+        window.addNewRow = function (silent = false) {
+            try {
+                const newRow = {
+                    tempId: Date.now() + Math.random(),
+                    date: ((d) => { const dt = new Date(d); const day = String(dt.getDate()).padStart(2, '0'); const mon = dt.toLocaleString('en-US', { month: 'short' }); return day + '-' + mon + '-' + dt.getFullYear(); })(new Date()),
+                    product_id: null,
+                    product_name: 'Search product...',
+                    brand_name: '',
+                    item_code: '-',
+                    quantity: 1,
+                    from_warehouse_id: '',
+                    to_warehouse_id: '',
+                    cost: 0,
+                    amount: 0,
+                    remark: '',
+                    saved: false
+                };
+                // Move new rows to TOP
+                state.data.unshift(newRow);
+                if (!silent) renderBody();
+            } catch (e) {
+                console.error('addNewRow error:', e);
+                state.data.unshift({
+                    tempId: Date.now(),
+                    date: '-',
+                    product_name: 'Search product...',
+                    quantity: 1,
+                    from_warehouse_id: '',
+                    to_warehouse_id: '',
+                    cost: 0,
+                    amount: 0,
+                    saved: false
+                });
+                if (!silent) renderBody();
+            }
+        }
+
+        function getFontSize(text) {
+            const len = (text || '').length;
+            if (len <= 15) return '14px';
+            if (len <= 25) return '12px';
+            if (len <= 40) return '11px';
+            return '10px';
+        }
+
+        function renderBody() {
+            const body = document.getElementById('gridBody');
+            body.innerHTML = '';
+            state.data.forEach((row, rIdx) => {
+                const displayName = row.brand_name ? '[' + row.brand_name + '] ' + row.product_name : row.product_name;
+                const placeholder = row.product_id ? '' : 'Search product...';
+                const inputValue = row.product_id ? displayName : '';
+
+                const fromWhName = state.warehouses.find(w => w.id === row.from_warehouse_id)?.name || '-';
+                const toWhName = state.warehouses.find(w => w.id === row.to_warehouse_id)?.name || '-';
+
+                const tr = document.createElement('tr');
+                if (row.saved) tr.style.opacity = '0.8';
+
+                tr.innerHTML = `
+                    <td style="text-align: center; font-size: 11px; opacity: 0.5;">${row.saved ? '<i class="fas fa-history"></i>' : rIdx + 1}</td>
+                    <td style="padding: 0 12px; font-size: 11px; opacity: 0.6;">${row.date}</td>
+                    <td style="padding: 0;">
+                        ${row.saved ?
+                        `<div style="padding: 0 12px; font-size: 13px;">${escapeHtml(displayName)}</div>` :
+                        `<input type="text" 
+                                id="product-${rIdx}"
+                                class="product-search-input"
+                                value="${escapeHtml(inputValue)}"
+                                placeholder="${placeholder}"
+                                oninput="searchProduct(${rIdx}, this.value)"
+                                onkeydown="handleProductKeydown(event, ${rIdx})"
+                                onclick="showAllProducts(${rIdx}); this.select()"
+                                style="text-align: left;">`
+                    }
+                    </td>
+                    <td class="${row.saved ? '' : 'cell-editable'}" style="text-align: center; font-weight: bold;" ${row.saved ? '' : `onclick="editCell(${rIdx}, 'quantity', this)"`}>
+                        <div class="cell-container" style="justify-content: center; color: var(--primary-light);">${row.quantity}</div>
+                    </td>
+                    <td class="${row.saved ? '' : 'cell-editable'}" style="text-align: center; font-size: 12px;" ${row.saved ? '' : `onclick="editWarehouse(${rIdx}, 'from_warehouse_id', this)"`}>
+                        <div class="cell-container" style="justify-content: center; opacity: 0.8;">${fromWhName}</div>
+                    </td>
+                    <td class="${row.saved ? '' : 'cell-editable'}" style="text-align: center; font-size: 12px;" ${row.saved ? '' : `onclick="editWarehouse(${rIdx}, 'to_warehouse_id', this)"`}>
+                        <div class="cell-container" style="justify-content: center; opacity: 0.8;">${toWhName}</div>
+                    </td>
+                    <td style="padding: 0 12px; text-align: right; font-weight: 600; font-size: 12px; opacity: 0.7;">${(row.cost || 0).toLocaleString()}</td>
+                    <td style="padding: 0 12px; text-align: right; font-weight: 700; color: var(--primary-light); font-size: 13px;">${(row.amount || 0).toLocaleString()}</td>
+                    <td class="${row.saved ? '' : 'cell-editable'}" onclick="${row.saved ? '' : `editCell(${rIdx}, 'remark', this)`}">
+                        <div class="cell-container" style="padding: 0 12px; font-size: 12px; opacity: 0.8;">${row.remark || '-'}</div>
+                    </td>
+                    <td style="text-align: center;">
+                        ${row.saved ? '' : `
+                            <button onclick="removeRow(${rIdx})" class="btn-delete" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `}
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+            updateTotal();
+        }
+
+        window.editWarehouse = function (rIdx, colId, td) {
+            if (state.data[rIdx].saved) return;
+            showWarehouseDropdown(rIdx, colId, td);
+        }
+
+        function showWarehouseDropdown(rIdx, colId, container) {
+            const menu = document.getElementById('ddMenu');
+            const currentVal = state.data[rIdx][colId];
+
+            let html = '';
+            state.warehouses.forEach(wh => {
+                const isSelected = wh.id === currentVal;
+                html += `
+                    <div class="dropdown-item ${isSelected ? 'active' : ''}" 
+                         onclick="selectWarehouse(${rIdx}, '${colId}', '${wh.id}')"
+                         style="${isSelected ? 'background: rgba(99, 102, 241, 0.3); color: var(--primary-light);' : ''}">
+                        <div style="font-weight: 600;">${wh.name}</div>
+                    </div>
+                `;
+            });
+
+            menu.innerHTML = html;
+
+            const rect = container.getBoundingClientRect();
+            menu.style.display = 'block';
+            menu.style.position = 'fixed';
+            menu.style.top = (rect.bottom + 2) + 'px';
+            menu.style.left = rect.left + 'px';
+            menu.style.width = Math.max(rect.width, 200) + 'px';
+            menu.style.maxHeight = '250px';
+            menu.style.overflowY = 'auto';
+        }
+
+        window.selectWarehouse = function (rIdx, colId, whId) {
+            state.data[rIdx][colId] = whId;
+            hideDropdown();
+            renderBody();
+        }
+
+        window.removeRow = function (rIdx) {
+            state.data.splice(rIdx, 1);
+            if (state.data.length === 0) addNewRow();
+            else renderBody();
+        }
+
+        function editCell(rIdx, colId, td) {
+            const col = SCHEMA.find(c => c.id === colId);
+            if (!col || col.readOnly) return;
+
+            const container = td.querySelector('.cell-container');
+
+            // Quantity and Remark use simple inputs
+            const currentVal = state.data[rIdx][colId];
+            const input = document.createElement('input');
+            input.type = col.type === 'number' ? 'number' : 'text';
+            input.className = 'premium-input';
+            input.value = currentVal === '-' ? '' : (currentVal || '');
+
+            if (col.type === 'number') {
+                input.style.textAlign = 'center';
+            } else {
+                input.style.padding = '0 12px';
+            }
+
+            container.style.padding = '0';
+            container.innerHTML = '';
+            container.appendChild(input);
+            input.focus();
+            if (input.type === 'text') input.setSelectionRange(0, input.value.length);
+            else input.select();
+
+            const finish = () => {
+                handleInput(rIdx, colId, input.value);
+                renderBody();
+            };
+
+            input.onblur = finish;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') finish();
+                if (e.key === 'Escape') renderBody();
+            };
+        }
+
+        function handleInput(rIdx, colId, val) {
+            const row = state.data[rIdx];
+            if (colId === 'quantity') {
+                row.quantity = parseInt(val) || 0;
+                const product = state.products.find(p => p.id === row.product_id);
+                row.amount = row.quantity * (product?.cost || 0);
+            } else {
+                row[colId] = val;
+            }
+        }
+
+        let productSearchTimeout = null;
+
+        function searchProduct(rIdx, query) {
+            clearTimeout(productSearchTimeout);
+
+            if (!query || query.length < 1) {
+                // Clear product selection if input is empty
+                const row = state.data[rIdx];
+                row.product_id = null;
+                row.product_name = 'Search Code/Name/Barcode...';
+                row.brand_name = '';
+                row.item_code = '-';
+                row.cost = 0;
+                row.amount = 0;
+                hideDropdown();
+                return;
+            }
+
+            productSearchTimeout = setTimeout(() => {
+                showProductDropdownForInput(rIdx, query);
+            }, 150);
+        }
+
+        function showAllProducts(rIdx) {
+            showProductDropdownForInput(rIdx, '');
+        }
+
+        function showProductDropdownForInput(rIdx, query) {
+            const inputEl = document.getElementById(`product-${rIdx}`);
+            if (!inputEl) return;
+
+            const menu = document.getElementById('ddMenu');
+            const q = query.toLowerCase();
+
+            const filtered = state.products.filter(p =>
+                (p.name && p.name.toLowerCase().includes(q)) ||
+                (p.item_code && p.item_code.toLowerCase().includes(q)) ||
+                (p.barcodes && (Array.isArray(p.barcodes) ? p.barcodes.some(b => typeof b === 'string' && b.toLowerCase().includes(q)) : String(p.barcodes).toLowerCase().includes(q)))
+            ).slice(0, 50);
+
+            state.dropdownFiltered = filtered;
+            state.dropdownSelectedIndex = -1;
+
+            if (filtered.length === 0) {
+                menu.innerHTML = '<div style="padding: 12px; text-align: center; opacity: 0.5; font-size: 11px;">No products found</div>';
+            } else {
+                let html = '';
+                filtered.forEach((p, i) => {
+                    html += `
+                        <div class="dropdown-item" data-index="${i}" onclick="selectProductFromSearch(${rIdx}, '${p.id}')">
+                            <div style="font-weight: 600;">${p.brand_name ? '[' + p.brand_name + '] ' : ''}${p.name}</div>
+                            <div style="color: var(--text-muted); font-size: 10px; margin-top: 2px;">
+                                Code: ${p.item_code || '-'} | Cost: ${(p.cost || 0).toLocaleString()}
+                            </div>
+                        </div>`;
+                });
+                menu.innerHTML = html;
+            }
+
+            const rect = inputEl.getBoundingClientRect();
+            menu.style.display = 'block';
+            menu.style.position = 'fixed';
+            menu.style.top = (rect.bottom + 2) + 'px';
+            menu.style.left = rect.left + 'px';
+            menu.style.width = Math.max(rect.width, 300) + 'px';
+            menu.style.maxHeight = '300px';
+            menu.style.overflowY = 'auto';
+        }
+        function selectProductFromSearch(rIdx, productId) {
+            const p = state.products.find(prod => prod.id == productId);
+            if (!p) return;
+
+            const row = state.data[rIdx];
+            row.product_id = p.id;
+            row.product_name = p.name;
+            row.brand_name = p.brand_name || '';
+            row.item_code = p.item_code || '-';
+            row.cost = p.cost || 0;
+            row.amount = row.quantity * row.cost;
+
+            hideDropdown();
+            renderBody();
+
+            // Focus next cell or simply re-render
+            setTimeout(() => {
+                const nextInput = document.getElementById(`product-${rIdx}`);
+                if (nextInput) {
+                    // Stay in same row but maybe focus quantity? 
+                    // Actually let's just keep focus if needed or move to quantity
+                }
+            }, 50);
+        }
+
+        function highlightDropdownItem(index) {
+            const items = document.querySelectorAll('#ddMenu .dropdown-item');
+            if (!items.length) return;
+            items.forEach((item, i) => {
+                item.style.background = i === index ? 'rgba(99, 102, 241, 0.4)' : 'transparent';
+            });
+            if (items[index]) items[index].scrollIntoView({ block: 'nearest' });
+        }
+
+        window.handleProductKeydown = function (e, rIdx) {
+            const menu = document.getElementById('ddMenu');
+            const isVisible = menu && menu.style.display !== 'none';
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!isVisible) {
+                    showAllProducts(rIdx);
+                } else {
+                    const maxIndex = state.dropdownFiltered.length - 1;
+                    state.dropdownSelectedIndex = Math.min(state.dropdownSelectedIndex + 1, maxIndex);
+                    highlightDropdownItem(state.dropdownSelectedIndex);
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (isVisible) {
+                    state.dropdownSelectedIndex = Math.max(state.dropdownSelectedIndex - 1, 0);
+                    highlightDropdownItem(state.dropdownSelectedIndex);
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (isVisible && state.dropdownSelectedIndex >= 0) {
+                    const p = state.dropdownFiltered[state.dropdownSelectedIndex];
+                    if (p) selectProductFromSearch(rIdx, p.id);
+                } else if (!isVisible) {
+                    saveTransfer();
+                }
+            } else if (e.key === 'Escape') {
+                hideDropdown();
+            } else if (e.key === 'Tab') {
+                if (isVisible) hideDropdown();
+            }
+        }
+
+        function updateTotal() {
+            const total = state.data.filter(r => !r.saved).reduce((sum, row) => sum + (row.amount || 0), 0);
+            const el = document.getElementById('totalAmount');
+            if (el) el.textContent = total.toLocaleString() + ' Ks';
+        }
+
+        function hideDropdown() {
+            const menu = document.getElementById('ddMenu');
+            if (menu) menu.style.display = 'none';
+            state.dropdownSelectedIndex = -1;
+            state.dropdownFiltered = [];
+        }
+
+        window.onclick = (e) => {
+            if (!e.target.closest('.cell-editable') &&
+                !e.target.closest('#ddMenu') &&
+                !e.target.matches('input[id^="product-"]')) {
+                hideDropdown();
+            }
+        };
+
+        // Close dropdown on scroll to avoid alignment issues
+        window.addEventListener('scroll', hideDropdown, true);
+        document.querySelector('.grid-container')?.addEventListener('scroll', hideDropdown);
+
+        window.saveTransfer = async function () {
+            const unsavedItems = state.data.filter(i => !i.saved && i.product_id);
+            if (unsavedItems.length === 0) return alert('No new items to save.');
+
+            // Validate that all unsaved items have warehouse selection
+            const invalidItems = unsavedItems.filter(i => !i.from_warehouse_id || !i.to_warehouse_id);
+            if (invalidItems.length > 0) {
+                return alert('Please select From and To warehouses for all new items.');
+            }
+
+            // Check if from and to are different
+            if (unsavedItems.some(i => i.from_warehouse_id === i.to_warehouse_id)) {
+                return alert('Source and Destination warehouse cannot be the same for any item.');
+            }
+
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            updateSyncStatus('Saving...', 'pending');
+
+            try {
+                // Group items by (from_warehouse_id, to_warehouse_id)
+                // We use today's date for all new items being saved now
+                const date = new Date().toISOString().split('T')[0];
+
+                const groups = {};
+                unsavedItems.forEach(item => {
+                    const key = `${item.from_warehouse_id}_${item.to_warehouse_id}`;
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(item);
+                });
+
+                for (const key in groups) {
+                    const groupItems = groups[key];
+                    const [fromId, toId] = key.split('_');
+
+                    // 1. Create parent transfer
+                    const { data: transfer, error: tErr } = await supabase.from('transfers').insert([{
+                        date,
+                        from_warehouse_id: fromId,
+                        to_warehouse_id: toId,
+                        total_qty: groupItems.reduce((sum, i) => sum + i.quantity, 0),
+                        grand_total: groupItems.reduce((sum, i) => sum + i.amount, 0),
+                        remark: 'Bulk Transfer'
+                    }]).select().single();
+
+                    if (tErr) throw tErr;
+
+                    // 2. Create transfer items
+                    const itemsToInsert = groupItems.map(i => ({
+                        transfer_id: transfer.id,
+                        product_id: i.product_id,
+                        quantity: i.quantity,
+                        unit_cost: i.cost,
+                        subtotal: i.amount,
+                        remark: i.remark
+                    }));
+
+                    const { error: iErr } = await supabase.from('transfer_items').insert(itemsToInsert);
+                    if (iErr) throw iErr;
+
+                    // 3. Process stock via RPC
+                    for (const item of groupItems) {
+                        const { error: rpcErr } = await supabase.rpc('process_transfer_stock', {
+                            p_from_warehouse_id: fromId,
+                            p_to_warehouse_id: toId,
+                            p_product_id: item.product_id,
+                            p_quantity: item.quantity
+                        });
+                        if (rpcErr) console.error('RPC Stock Error:', rpcErr);
+                    }
+                }
+
+                alert('All transfers saved successfully!');
+                updateSyncStatus('Saved');
+
+                // Clear unsaved data and refresh list
+                state.data = state.data.filter(r => r.saved);
+                await loadTransfers();
+
+            } catch (e) {
+                console.error(e);
+                alert('Error saving transfer: ' + e.message);
+                updateSyncStatus('Error', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Transfer';
+            }
+        }
+
+        window.goBack = function () {
+            if (window.parent) window.parent.postMessage({ type: 'BACK' }, '*');
+        }
+
+        window.importData = function () {
+            alert('Import feature coming soon!');
+        }
+
+        window.exportData = function () {
+            alert('Export feature coming soon!');
+        }
+
+        window.onclick = (e) => {
+            if (!e.target.closest('.cell-editable') && !e.target.closest('.dropdown-menu') && !e.target.matches('input[id^="product-"]')) {
+                hideDropdown();
+            }
+        };
+
+        // Message Handling
+        window.addEventListener('message', (e) => {
+            const { type } = e.data;
+            if (type === 'ADD_ROW') addNewRow();
+            else if (type === 'SAVE_CHANGES') saveTransfer();
+            else if (type === 'REFRESH') window.location.reload();
+        });
+
+        console.log('Transfer script loaded. addNewRow defined:', typeof window.addNewRow);
+        console.log('saveTransfer defined:', typeof window.saveTransfer);
+
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/datepicker-init.js"></script>
+</body>
+
+</html>

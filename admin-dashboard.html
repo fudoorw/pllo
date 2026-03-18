@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Admin Dashboard - POS System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Barcode Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <!-- TomSelect Library (Searchable Dropdowns) -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <!-- Permission Utility (must load before auth scripts) -->
+    <script src="js/permissions.js"></script>
+</head>
+
+<body>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Dashboard Layout -->
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <a href="admin-dashboard.html" class="sidebar-logo">
+                    <i class="fas fa-cash-register"></i>
+                    <span>POS System</span>
+                </a>
+            </div>
+
+            <!-- Sidebar Navigation -->
+            <nav class="sidebar-nav">
+                <!-- Analysis Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Analysis</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active" data-view="" onclick="switchView(''); return false;">
+                                <i class="fas fa-th-large"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="reports"
+                                onclick="switchView('reports'); return false;">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Reports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Inventory Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Inventory</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item has-submenu">
+                            <a href="#" class="nav-link dropdown-toggle">
+                                <div style="display:flex; align-items:center; gap:var(--space-md); flex:1;">
+                                    <i class="fas fa-boxes"></i>
+                                    <span>Product</span>
+                                </div>
+                                <i class="fas fa-chevron-right nav-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="products"
+                                        onclick="switchView('products'); return false;">Products manager</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="product-add"
+                                        onclick="switchView('product-add'); return false;">Add
+                                        Product</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="categories"
+                                        onclick="switchView('categories'); return false;">Product Categories</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="variations"
+                                        onclick="switchView('variations'); return false;">Variations</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="brands"
+                                        onclick="switchView('brands'); return false;">Brands</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="units"
+                                        onclick="switchView('units'); return false;">Units</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="barcodes"
+                                        onclick="switchView('barcodes'); return false;">Print
+                                        Barcode</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="adjustments"
+                                onclick="switchView('adjustments'); return false;">
+                                <i class="fas fa-sliders-h"></i>
+                                <span>Adjustments</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="warehouses"
+                                onclick="switchView('warehouses'); return false;">
+                                <i class="fas fa-warehouse"></i>
+                                <span>Warehouse</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Sales & Purchases Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Transactions</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="quotation"
+                                onclick="switchView('quotation'); return false;">
+                                <i class="fas fa-file-invoice"></i>
+                                <span>Quotations</span>
+                            </a>
+                        </li>
+                        <li class="nav-item has-submenu">
+                            <a href="#" class="nav-link dropdown-toggle" data-view="purchase-list">
+                                <div style="display:flex; align-items:center; gap:var(--space-md); flex:1;">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <span>Purchases</span>
+                                </div>
+                                <i class="fas fa-chevron-right nav-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="purchase-order"
+                                        onclick="switchView('purchase-order'); return false;">Purchase Order</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="purchase-order-list"
+                                        onclick="switchView('purchase-order-list'); return false;">Order List</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="purchase-list"
+                                        onclick="switchView('purchase-list'); return false;">Purchase List</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="purchase-add"
+                                        onclick="switchView('purchase-add'); return false;">Add
+                                        Purchase</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="purchase-return"
+                                        onclick="switchView('purchase-return'); return false;">Purchase Return</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="purchase-return-list"
+                                        onclick="switchView('purchase-return-list'); return false;">Return List</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item has-submenu">
+                            <a href="#" class="nav-link dropdown-toggle" data-view="sales">
+                                <div style="display:flex; align-items:center; gap:var(--space-md); flex:1;">
+                                    <i class="fas fa-cash-register"></i>
+                                    <span>Sales</span>
+                                </div>
+                                <i class="fas fa-chevron-right nav-arrow"></i>
+                                <span class="nav-badge">NEW</span>
+                            </a>
+                            <ul class="submenu">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="pos"
+                                        onclick="switchView('pos'); return false;">POS /
+                                        Cashier</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="sales"
+                                        onclick="switchView('sales'); return false;">Sale
+                                        List</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="sales-return"
+                                        onclick="switchView('sales-return'); return false;">Sale Return</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="transfers"
+                                onclick="switchView('transfers'); return false;">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>Transfers</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Finance Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Finance</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item has-submenu">
+                            <a href="#" class="nav-link dropdown-toggle">
+                                <div style="display:flex; align-items:center; gap:var(--space-md); flex:1;">
+                                    <i class="fas fa-receipt"></i>
+                                    <span>Expenses</span>
+                                </div>
+                                <i class="fas fa-chevron-right nav-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="expenses"
+                                        onclick="switchView('expenses'); return false;">Expense
+                                        List</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="expense-categories"
+                                        onclick="switchView('expense-categories'); return false;">Expense Categories</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- People Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">People</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item has-submenu">
+                            <a href="#" class="nav-link dropdown-toggle">
+                                <div style="display:flex; align-items:center; gap:var(--space-md); flex:1;">
+                                    <i class="fas fa-users"></i>
+                                    <span>People</span>
+                                </div>
+                                <i class="fas fa-chevron-right nav-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="suppliers"
+                                        onclick="switchView('suppliers'); return false;">Suppliers</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="customers"
+                                        onclick="switchView('customers'); return false;">Customers</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item has-submenu">
+                            <a href="#" class="nav-link dropdown-toggle" data-view="users">
+                                <i class="fas fa-users-cog"></i>
+                                <span>User Management</span>
+                                <i class="fas fa-chevron-right nav-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="users"
+                                        onclick="switchView('users'); return false;">Users</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="roles"
+                                        onclick="switchView('roles'); return false;">Roles &
+                                        Permission</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+
+                <!-- Settings Section -->
+                <div class="nav-section" data-permissions="admin">
+                    <div class="nav-section-title">Settings</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="currencies"
+                                onclick="switchView('currencies'); return false;">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Currencies</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="settings"
+                                onclick="switchView('settings'); return false;">
+                                <i class="fas fa-cogs"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-view="languages"
+                                onclick="switchView('languages'); return false;">
+                                <i class="fas fa-globe"></i>
+                                <span>Languages</span>
+                            </a>
+                        </li>
+                        <li class="nav-item has-submenu">
+                            <a href="#" class="nav-link dropdown-toggle" data-view="sms-templates">
+                                <div style="display:flex; align-items:center; gap:var(--space-md); flex:1;">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span>Templates</span>
+                                </div>
+                                <i class="fas fa-chevron-right nav-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="sms-templates"
+                                        onclick="switchView('sms-templates'); return false;">SMS Templates</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="email-templates"
+                                        onclick="switchView('email-templates'); return false;">Email Templates</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-view="api-settings"
+                                        onclick="switchView('api-settings'); return false;">API</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="main-wrapper">
+            <!-- Top Navbar -->
+            <nav class="top-navbar">
+                <div class="navbar-left">
+                    <button class="menu-toggle" id="menuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="page-title-nav">Dashboard</h1>
+                </div>
+
+
+                <div class="navbar-right">
+
+
+
+                    <!-- Navbar Icons -->
+                    <div class="navbar-icons">
+                        <button class="navbar-icon">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge">3</span>
+                        </button>
+                        <button class="navbar-icon">
+                            <i class="fas fa-envelope"></i>
+                            <span class="badge">5</span>
+                        </button>
+                        <button class="navbar-icon" onclick="toggleFullscreen()" title="Fullscreen Mode">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+
+                    <!-- User Menu -->
+                    <div class="user-menu">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name-nav" id="userName">Admin</div>
+                            <div class="user-role-nav" id="userRole">Administrator</div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Dashboard Content -->
+            <main class="dashboard-content">
+                <!-- Dashboard View (Iframe) -->
+                <div id="view-dashboard" class="view-section" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="dashboardIframe" src="dashboard-view.html?v=2.0"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Product Manager View -->
+                <div id="view-products" class="view-section hidden">
+                    <!-- Toolbar -->
+                    <div class="grid-toolbar" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: var(--space-md);">
+                            <!-- Excel-like Status -->
+                            <div class="excel-status-chip"
+                                style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-database"></i> <span id="syncStatus">Ready</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                            <button class="btn btn-indigo" onclick="loadProducts(true)" title="Refresh from Supabase">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button class="btn btn-indigo" onclick="addNewRow()" title="Add empty row">
+                                <i class="fas fa-plus"></i> Add Row
+                            </button>
+                            <button class="btn btn-indigo" onclick="openExcelImport()" title="Import CSV/Excel">
+                                <i class="fas fa-file-import"></i> Import
+                            </button>
+                            <button class="btn btn-indigo" onclick="exportToExcel()" title="Export to CSV">
+                                <i class="fas fa-file-export"></i> Export
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteSelectedProducts()"
+                                title="Delete selected products">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                            <button class="btn btn-success" onclick="saveAllChanges()" id="saveBtn"
+                                style="background: #059669; border-color: #059669;">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Seamless Grid Iframe -->
+                    <div id="grid-iframe-container"
+                        style="flex:1; display:flex; flex-direction:column; height: calc(100vh - 140px); background: var(--bg-secondary); border-radius: var(--radius-lg); overflow: hidden; margin-top: var(--space-md);">
+                        <iframe id="productGridIframe" src="excel_example.html?mode=embedded"
+                            style="width: 100%; height: 100%; border: none;"
+                            onload="if(typeof window.loadProducts==='function') window.loadProducts()"></iframe>
+                    </div>
+
+                </div>
+
+                <!-- Add Product View (Seamless Iframe) -->
+                <div id="view-product-add" class="view-section hidden">
+                    <div style="height: calc(100vh - 80px); overflow: hidden;">
+                        <iframe id="addProductIframe" src="addproduct.html?mode=embedded"
+                            style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                </div>
+
+                <!-- Category Manager View (Standalone Iframe) -->
+                <div id="view-categories" class="view-section hidden">
+                    <div style="height: calc(100vh - 80px); overflow: hidden;">
+                        <iframe id="categoriesIframe" src="categories.html"
+                            style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                </div>
+
+                <!-- Variation Manager View (Standalone Iframe) -->
+                <div id="view-variations" class="view-section hidden">
+                    <div style="height: calc(100vh - 80px); overflow: hidden;">
+                        <iframe id="variationsIframe" src="variations.html"
+                            style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                </div>
+
+                <!-- Brands Manager View (Standalone Iframe) -->
+                <div id="view-brands" class="view-section hidden">
+                    <div style="height: calc(100vh - 80px); overflow: hidden;">
+                        <iframe id="brandsIframe" src="brands.html"
+                            style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                </div>
+
+                <!-- Units Manager View (Standalone Iframe) -->
+                <div id="view-units" class="view-section hidden">
+                    <div style="height: calc(100vh - 80px); overflow: hidden;">
+                        <iframe id="unitsIframe" src="units.html"
+                            style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                </div>
+
+
+
+                <!-- Stock Adjustment View (Iframe) -->
+                <div id="view-adjustments" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <div class="grid-toolbar"
+                        style="padding: 10px 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: var(--space-md);">
+                            <div class="excel-status-chip"
+                                style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-database"></i> <span id="adjSyncStatus">Ready</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: var(--space-sm);">
+                            <button class="btn btn-secondary"
+                                onclick="document.getElementById('adjustmentsIframe').contentWindow.postMessage({type: 'OPEN_FILTER'}, '*')">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <button class="btn btn-secondary"
+                                onclick="document.getElementById('adjustmentsIframe').contentWindow.postMessage({type: 'REFRESH'}, '*')">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button class="btn btn-primary"
+                                onclick="document.getElementById('adjustmentsIframe').contentWindow.postMessage({type: 'ADD_ROW'}, '*')">
+                                <i class="fas fa-plus"></i> Add Row
+                            </button>
+                            <button class="btn btn-indigo"
+                                onclick="document.getElementById('adjustmentsIframe').contentWindow.postMessage({type: 'IMPORT_REQUEST'}, '*')">
+                                <i class="fas fa-file-import"></i> Import
+                            </button>
+                            <button class="btn btn-indigo"
+                                onclick="document.getElementById('adjustmentsIframe').contentWindow.postMessage({type: 'EXPORT_REQUEST'}, '*')">
+                                <i class="fas fa-file-export"></i> Export
+                            </button>
+                            <button class="btn btn-success"
+                                onclick="document.getElementById('adjustmentsIframe').contentWindow.postMessage({type: 'SAVE_CHANGES'}, '*')">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <button class="btn btn-danger"
+                                onclick="document.getElementById('adjustmentsIframe').contentWindow.postMessage({type: 'DELETE_SELECTED'}, '*')">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                    <iframe id="adjustmentsIframe" src="adjustment.html?mode=embedded"
+                        style="width: 100%; height: calc(100% - 60px); border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- POS View (Point of Sale) -->
+                <div id="view-pos" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="posIframe" src="pos.html"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Sales Management View (Iframe) -->
+                <div id="view-sales" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="salesIframe" src="sale.html"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Today's Sales View for POS (Iframe) -->
+                <div id="view-sale-pos" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="salePosIframe" src="sale-pos.html"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Sales Return View (Iframe) -->
+                <div id="view-sales-return" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="salesReturnIframe" src="sale_return.html"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Barcode Management View (Iframe) -->
+                <div id="view-barcodes" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="barcodesIframe" src="barcodes.html"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Stock Transfer View (Iframe) -->
+                <div id="view-transfers" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="transfersIframe" src="transfer.html?mode=embedded"
+                        style="width: 100%; height: calc(100% - 60px); border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Expense Management View (Iframe) -->
+                <div id="view-expenses" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="expensesIframe" src="expense.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Expense Categories View (Iframe) -->
+                <div id="view-expense-categories" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="expenseCategoriesIframe" src="expense_categories.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Suppliers View (Iframe) -->
+                <div id="view-suppliers" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="suppliersIframe" src="suppliers.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Customers View (Iframe) -->
+                <div id="view-customers" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="customersIframe" src="customers.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Reports View (Iframe) -->
+                <div id="view-reports" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="reportsIframe" src="report.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Warehouse Management View -->
+                <!-- Warehouse Management View (Iframe) -->
+                <div id="view-warehouses" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="warehousesIframe" src="warehouses.html"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- User Management View (Iframe) -->
+                <div id="view-users" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="usersIframe" src="users.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Roles Management View (Iframe) -->
+                <div id="view-roles" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="rolesIframe" src="roles.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Currencies View (Iframe) -->
+                <div id="view-currencies" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="currenciesIframe" src="currencies.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Languages View (Iframe) -->
+                <div id="view-languages" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="languagesIframe" src="languages.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Settings View (Iframe) -->
+                <div id="view-settings" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="settingsIframe" src="settings.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- SMS Templates View (Iframe) -->
+                <div id="view-sms-templates" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="smsTemplatesIframe" src="sms-templates.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Email Templates View (Iframe) -->
+                <div id="view-email-templates" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="emailTemplatesIframe" src="email-templates.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- API Settings View (Iframe) -->
+                <div id="view-api-settings" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="apiSettingsIframe" src="api-settings.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Purchase List View (Iframe) -->
+                <div id="view-purchase-list" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="purchaseListIframe" src="purchase-list.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Purchase Order View (Iframe) -->
+                <div id="view-purchase-order" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="purchaseOrderIframe" src="purchaseorder.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Purchase Order List View (Iframe) -->
+                <div id="view-purchase-order-list" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="purchaseOrderListIframe" src="purchase-order-list.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Purchase Add View (Iframe) -->
+                <div id="view-purchase-add" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="purchaseAddIframe" src="purchase-add.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Purchase Return View (Iframe) -->
+                <div id="view-purchase-return" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="purchaseReturnIframe" src="purchase-return.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Purchase Return List View (Iframe) -->
+                <div id="view-purchase-return-list" class="view-section hidden"
+                    style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="purchaseReturnListIframe" src="purchase-return-list.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <!-- Quotation View (Iframe) -->
+                <div id="view-quotation" class="view-section hidden" style="height: calc(100vh - 100px); padding: 0;">
+                    <iframe id="quotationIframe" src="quotation.html?mode=embedded"
+                        style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                </div>
+
+                <style>
+                    .search-results-dropdown {
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        right: 0;
+                        background: #2a2a2a;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+                        z-index: 1000;
+                        max-height: 300px;
+                        overflow-y: auto;
+                        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+                    }
+
+                    .search-result-item {
+                        padding: var(--space-sm) var(--space-md);
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                        cursor: pointer;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+
+                    .search-result-item:hover {
+                        background: rgba(255, 255, 255, 0.05);
+                    }
+
+                    .search-result-name {
+                        font-weight: 500;
+                    }
+
+                    .search-result-code {
+                        font-size: 0.8rem;
+                        color: var(--text-muted);
+                    }
+
+                    @media print {
+                        body * {
+                            visibility: hidden;
+                        }
+
+                        #print-label-container,
+                        #print-label-container * {
+                            visibility: visible;
+                        }
+
+                        #print-label-container {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%;
+                        }
+                    }
+                </style>
+
+                <div id="print-label-container" class="hidden"></div>
+
+                <!-- Print Preview Modal -->
+                <div id="barcodePreviewModal" class="modal-overlay hidden">
+                    <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Print Preview</h3>
+                            <div style="display: flex; gap: var(--space-sm);">
+                                <button class="btn btn-primary" onclick="window.print()">
+                                    <i class="fas fa-print"></i> Confirm Print
+                                </button>
+                                <button class="btn btn-secondary" onclick="closeBarcodePreview()">
+                                    <i class="fas fa-times"></i> Close
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-body"
+                            style="background: #f0f0f0; padding: 20px; overflow: auto; display: flex; justify-content: center;">
+                            <div id="barcodePreviewDisplay" class="label-print-grid-preview"
+                                style="background: white; box-shadow: 0 0 20px rgba(0,0,0,0.2);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    /* Custom Print Styles for New Labels */
+                    .label-print-grid-preview,
+                    .label-print-grid {
+                        display: grid;
+                        gap: 0;
+                        background: white;
+                        color: black;
+                        margin: 0 auto;
+                        box-sizing: border-box;
+                    }
+
+                    .barcode-label {
+                        border: 0.1mm solid #ddd;
+                        padding: 1mm;
+                        text-align: center;
+                        font-family: 'Inter', Arial, sans-serif;
+                        page-break-inside: avoid;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        box-sizing: border-box;
+                        overflow: hidden;
+                    }
+
+                    .label-brand {
+                        font-size: 7px;
+                        text-transform: uppercase;
+                        color: #666;
+                        font-weight: 700;
+                        margin-bottom: 1px;
+                    }
+
+                    .label-name {
+                        font-size: 9px;
+                        font-weight: 800;
+                        line-height: 1;
+                        margin-bottom: 2px;
+                    }
+
+                    .label-barcode-svg {
+                        width: 90%;
+                        height: auto;
+                        margin: 1mm 0;
+                    }
+
+                    .label-footer {
+                        display: flex;
+                        justify-content: space-between;
+                        width: 100%;
+                        margin-top: 2px;
+                        border-top: 0.1mm solid #eee;
+                        padding-top: 1px;
+                    }
+
+                    .label-code {
+                        font-size: 8px;
+                        font-family: monospace;
+                    }
+
+                    .label-price {
+                        font-size: 10px;
+                        font-weight: 900;
+                    }
+
+                    .modal-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.8);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 2000;
+                        backdrop-filter: blur(5px);
+                    }
+
+                    .modal-overlay.hidden {
+                        display: none;
+                    }
+
+                    .modal-content {
+                        background: var(--bg-secondary);
+                        border-radius: var(--radius-lg);
+                        width: 100%;
+                        display: flex;
+                        flex-direction: column;
+                    }
+
+                    .modal-header {
+                        padding: var(--space-md);
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+
+                    .btn-indigo {
+                        background: #4f46e5;
+                        color: white !important;
+                        border: 1px solid #4338ca;
+                    }
+
+                    .btn-indigo:hover {
+                        background: #4338ca;
+                    }
+
+                    .excel-status-chip {
+                        background: rgba(79, 70, 229, 0.1);
+                        border: 1px solid rgba(79, 70, 229, 0.2);
+                        padding: 2px 10px;
+                        border-radius: 100px;
+                    }
+
+                    @media print {
+                        body * {
+                            visibility: hidden !important;
+                        }
+
+                        #print-label-container,
+                        #print-label-container * {
+                            visibility: visible !important;
+                        }
+
+                        #print-label-container {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%;
+                            display: grid !important;
+                            visibility: visible !important;
+                        }
+
+                        .modal-overlay {
+                            display: none !important;
+                        }
+                    }
+
+                    /* Restricted Mode — for users who only have POS permission */
+                    body.restricted-mode .sidebar {
+                        display: none !important;
+                    }
+
+                    body.restricted-mode main {
+                        margin-left: 0 !important;
+                        padding: 0 !important;
+                        height: 100vh !important;
+                        overflow: hidden !important;
+                    }
+
+                    body.restricted-mode .top-nav {
+                        display: none !important;
+                    }
+
+                    body.restricted-mode .view-section {
+                        height: 100vh !important;
+                        padding: 0 !important;
+                    }
+
+                    body.restricted-mode .dashboard-content {
+                        padding: 0 !important;
+                    }
+                </style>
+
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Fallback CDN if primary fails
+        if (!window.supabase) {
+            document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
+        }
+    </script>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/data-loader.js"></script>
+    <script src="js/admin-core.js"></script>
+    <script src="js/products.js?v=8"></script>
+    <script src="js/admin-settings.js"></script>
+    <script src="js/purchases.js"></script>
+
+    <script src="js/admin-events.js"></script>
+
+    <script>
+        // Supabase client is already initialized globally in supabase-client.js
+
+        // Sidebar Toggle for Mobile
+        var menuToggle = document.getElementById('menuToggle');
+        var sidebar = document.getElementById('sidebar');
+        var sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        menuToggle.addEventListener('click', function () {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        });
+
+        sidebarOverlay.addEventListener('click', function () {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        // Sidebar Dropdown Toggle
+        var dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+        dropdownToggles.forEach(function (toggle) {
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                var parent = toggle.parentElement;
+                parent.classList.toggle('active');
+            });
+        });
+
+        // --- Global State ---
+        // (Will be moved to respective modules)
+
+
+
+
+
+
+
+
+
+
+        // =====================================================
+        // IMPORT / EXPORT FUNCTIONS
+        // =====================================================
+
+
+        // =====================================================
+        // SEARCH & KEYBINDS
+        // =====================================================
+
+        function setupGlobalSearch() {
+            const searchInput = document.getElementById('globalSearchInput');
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', function (e) {
+                const query = e.target.value;
+                const currentView = new URLSearchParams(window.location.search).get('view');
+
+                // Currently only supporting Product filter
+                if (currentView === 'products' || !currentView) {
+                    filterProducts(query);
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getCategoryName(id) {
+            if (!id) return '';
+            const data = window.categoriesData || [];
+            const cat = data.find(c => c.id === id);
+            return cat ? cat.name : '';
+        }
+
+        function getSubcategoryName(id) {
+            if (!id) return '';
+            const data = window.subcategoriesData || [];
+            const sub = data.find(s => s.id === id);
+            return sub ? sub.name : '';
+        }
+
+        function getBrandName(id) {
+            if (!id) return '';
+            const data = window.brandsData || [];
+            const brand = data.find(b => b.id === id);
+            return brand ? brand.name : '';
+        }
+
+        function getUnitName(id) {
+            if (!id) return '';
+            const data = window.unitsData || [];
+            const unit = data.find(u => u.id === id);
+            return unit ? (unit.short_name || unit.name) : '';
+        }
+
+        function filterProducts(query) {
+            const q = query.toLowerCase();
+            const rows = document.querySelectorAll('.stacked-row');
+
+            rows.forEach(row => {
+                const id = row.dataset.id;
+                const data = window.productsData || [];
+                const product = data.find(p => p.id.toString() === id.toString());
+
+                if (!product) return;
+
+                const categoryName = getCategoryName(product.category_id).toLowerCase();
+                const subContext = getSubcategoryName(product.subcategory_id).toLowerCase();
+                const brandName = getBrandName(product.brand_id).toLowerCase();
+
+                const match = !q ||
+                    (product.name || '').toLowerCase().includes(q) ||
+                    (product.item_code || '').toLowerCase().includes(q) ||
+                    (product.supplier || '').toLowerCase().includes(q) ||
+                    (product.shop || '').toLowerCase().includes(q) ||
+                    categoryName.includes(q) ||
+                    subContext.includes(q) ||
+                    brandName.includes(q) ||
+                    (product.barcodes || []).some(bc => bc.toLowerCase().includes(q));
+
+                row.style.display = match ? 'flex' : 'none';
+            });
+        }
+
+        // =====================================================
+        // PURCHASE MANAGEMENT FUNCTIONS
+        // =====================================================
+
+        async function loadSuppliers() {
+            try {
+                const { data, error } = await supabase.from('suppliers').select('*').order('name');
+                if (error) throw error;
+                suppliersData = data || [];
+                const supplierSelect = document.getElementById('purchaseAddSupplier');
+                if (supplierSelect) {
+                    // Destroy existing instance if any
+                    if (supplierSelect.tomselect) supplierSelect.tomselect.destroy();
+
+                    supplierSelect.innerHTML = '<option value="">Choose Supplier</option>';
+                    suppliersData.forEach(s => {
+                        supplierSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                    });
+
+                    // Initialize TomSelect with Create option
+                    new TomSelect(supplierSelect, {
+                        create: true,
+                        sortField: { field: "text", direction: "asc" },
+                        placeholder: "Select or Type Supplier..."
+                    });
+                }
+            } catch (e) {
+                console.error('Error loading suppliers:', e);
+            }
+        }
+
+        async function loadWarehouses() {
+            try {
+                const { data, error } = await supabase.from('warehouses').select('*').order('name');
+                if (error) throw error;
+                warehousesData = data || [];
+                const warehouseSelect = document.getElementById('purchaseAddWarehouse');
+                if (warehouseSelect) {
+                    // Destroy existing instance if any
+                    if (warehouseSelect.tomselect) warehouseSelect.tomselect.destroy();
+
+                    warehouseSelect.innerHTML = '<option value="">Choose Warehouse</option>';
+                    warehousesData.forEach(w => {
+                        warehouseSelect.innerHTML += `<option value="${w.id}">${w.name}</option>`;
+                    });
+
+                    // Initialize TomSelect
+                    new TomSelect(warehouseSelect, {
+                        create: false,
+                        sortField: { field: "text", direction: "asc" },
+                        placeholder: "Select Warehouse..."
+                    });
+                }
+            } catch (e) {
+                console.error('Error loading warehouses:', e);
+            }
+        }
+
+
+
+
+
+        setupKeybinds();
+
+
+        // Initialize on page load
+        init();
+        setupGlobalSearch();
+
+
+
+        let selectedItemIndex = -1;
+
+        function setupKeybinds() {
+            document.addEventListener('keydown', function (e) {
+                const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT';
+
+                // Global Shortcuts (Even in Inputs)
+                // Ctrl + / or Ctrl + F to focus search
+                if ((e.ctrlKey && e.key === '/') || (e.ctrlKey && e.key === 'f')) {
+                    e.preventDefault();
+                    const search = document.getElementById('globalSearchInput');
+                    if (search) search.focus();
+                    return;
+                }
+
+                // Ctrl + S to save
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const view = urlParams.get('view');
+                    if (view === 'products' || !view) saveAllChanges();
+                    else if (view === 'categories') saveCategoryChanges();
+                    else if (view === 'brands') saveBrandChanges();
+                    else if (view === 'units') saveUnitChanges();
+                    else if (view === 'variations') saveVariationChanges();
+                    else if (view === 'purchase-add') savePurchase();
+                    return;
+                }
+
+                // Alt + N to Add New Item
+                if (e.altKey && e.key === 'n') {
+                    e.preventDefault();
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const view = urlParams.get('view');
+                    if (view === 'products' || !view) addNewRow();
+                    else if (view === 'purchase-manager') switchView('purchase-add');
+                    else if (view === 'purchase-add') {
+                        document.getElementById('purchaseAddDate').focus();
+                    }
+                    return;
+                }
+
+                // Help Modal (?) - Only if NOT in input
+                if (!isInput) {
+                    if (e.key === '?' || (e.shiftKey && e.key === '?')) {
+                        e.preventDefault();
+                        openShortcutsModal();
+                        return;
+                    }
+                }
+
+                // Esc
+                if (e.key === 'Escape') {
+                    if (!document.getElementById('shortcutsModal').classList.contains('hidden')) {
+                        closeShortcutsModal();
+                        return;
+                    }
+                    if (!document.getElementById('barcodePreviewModal').classList.contains('hidden')) {
+                        closeBarcodePreview();
+                        return;
+                    }
+                    if (isInput) {
+                        e.target.blur();
+                        return;
+                    }
+                    // Clear list selection
+                    if (selectedItemIndex !== -1) {
+                        const rows = document.querySelectorAll('.stacked-row.active, .excel-tr.active');
+                        rows.forEach(r => r.classList.remove('active'));
+                        selectedItemIndex = -1;
+                    }
+                }
+
+                // Input Navigation (Excel-like)
+                if (isInput) {
+                    if (['Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                        handleInputNavigation(e);
+                    }
+                    return;
+                }
+
+                // Navigation (List Arrows) - Only if NOT in input
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    navigateList(e.key === 'ArrowDown' ? 1 : -1);
+                }
+
+                // Action (List Enter) - Only if NOT in input
+                if (e.key === 'Enter') {
+                    if (selectedItemIndex !== -1) {
+                        e.preventDefault();
+                        handleEnterOnList();
+                    }
+                }
+            });
+        }
+
+        function handleInputNavigation(e) {
+            const current = e.target;
+            // Get all visible inputs (excluding hidden ones and search bars if desired, but general is fine)
+            // We want inputs that are part of the main content usually.
+            const allInputs = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'));
+
+            // Filter to ensure they are visible
+            const visibleInputs = allInputs.filter(el => el.offsetParent !== null);
+            const currentIndex = visibleInputs.indexOf(current);
+
+            if (currentIndex === -1) return;
+
+            let nextIndex = currentIndex;
+
+            // Enter or Right Arrow -> Next Field
+            if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextIndex = currentIndex + 1;
+            }
+            // Left Arrow -> Previous Field
+            else if (e.key === 'ArrowLeft') {
+                // Don't prevent default if cursor is not at start?
+                // For now, strict navigation:
+                if (current.selectionStart === 0 && current.selectionEnd === 0) { // Only if at start of text
+                    e.preventDefault();
+                    nextIndex = currentIndex - 1;
+                } else if (e.target.tagName === 'SELECT') { // Selects don't have cursor
+                    e.preventDefault();
+                    nextIndex = currentIndex - 1;
+                } else {
+                    return; // Let user move cursor in text
+                }
+            }
+            // Up / Down Arrow -> Geometric/Grid Navigation
+            else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                const direction = e.key === 'ArrowDown' ? 1 : -1;
+
+                // Check if we are in a row-based structure
+                const row = current.closest('.stacked-row, .excel-tr');
+                if (row) {
+                    e.preventDefault();
+                    // Grid Navigation Logic
+                    const inputsInRow = Array.from(row.querySelectorAll('input:not([type="hidden"]), select, textarea'));
+                    const colIndex = inputsInRow.indexOf(current);
+
+                    // Find sibling row
+                    let siblingRow = direction === 1 ? row.nextElementSibling : row.previousElementSibling;
+
+                    // Skip non-item rows if necessary (e.g. headers)
+                    while (siblingRow && !siblingRow.matches('.stacked-row, .excel-tr')) {
+                        siblingRow = direction === 1 ? siblingRow.nextElementSibling : siblingRow.previousElementSibling;
+                    }
+
+                    if (siblingRow) {
+                        const siblingInputs = Array.from(siblingRow.querySelectorAll('input:not([type="hidden"]), select, textarea'));
+                        // Try to find input at same index, or closest
+                        if (siblingInputs[colIndex]) {
+                            siblingInputs[colIndex].focus();
+                            // Select text if it's a text input
+                            if (siblingInputs[colIndex].select) siblingInputs[colIndex].select();
+                            return;
+                        }
+                    } else {
+                        // No sibling row, maybe move to next linear input?
+                        // e.g. from last item row to "Notes" field
+                        nextIndex = currentIndex + direction;
+                    }
+                } else {
+                    // Not in a grid row? Just linear up/down?
+                    // Or let default happen (e.g. number input increment)?
+                    // User asked for "arrow for use", implying navigation.
+                    // But ArrowUp/Down on select/number is useful.
+                    if (current.type === 'number' || current.tagName === 'SELECT') return;
+
+                    e.preventDefault();
+                    nextIndex = currentIndex + direction;
+                }
+            }
+
+            // Boundary checks
+            if (nextIndex >= 0 && nextIndex < visibleInputs.length) {
+                const target = visibleInputs[nextIndex];
+                target.focus();
+                if (target.select) target.select();
+            }
+        }
+
+        function navigateList(direction) {
+            // Identify visible list items
+            const rows = Array.from(document.querySelectorAll('.stacked-row, .excel-tr'));
+            // Filter out hidden or header rows if necessary (simple approach first)
+            const visibleRows = rows.filter(r => r.offsetParent !== null && !r.closest('thead')); // simple visibility check
+
+            if (visibleRows.length === 0) return;
+
+            selectedItemIndex += direction;
+            if (selectedItemIndex < 0) selectedItemIndex = 0;
+            if (selectedItemIndex >= visibleRows.length) selectedItemIndex = visibleRows.length - 1;
+
+            // Remove active class from all
+            visibleRows.forEach(r => r.classList.remove('active'));
+
+            // Add active class to selected
+            const selected = visibleRows[selectedItemIndex];
+            if (selected) {
+                selected.classList.add('active');
+                selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function handleEnterOnList() {
+            const rows = Array.from(document.querySelectorAll('.stacked-row, .excel-tr'));
+            const visibleRows = rows.filter(r => r.offsetParent !== null && !r.closest('thead'));
+            const selected = visibleRows[selectedItemIndex];
+
+            if (!selected) return;
+
+            // Try to find an "Edit" or "View" button inside
+            const editBtn = selected.querySelector('.fa-edit')?.closest('button');
+            const viewBtn = selected.querySelector('.fa-eye')?.closest('button');
+
+            if (editBtn) editBtn.click();
+            else if (viewBtn) viewBtn.click();
+        }
+
+        function openShortcutsModal() {
+            document.getElementById('shortcutsModal').classList.remove('hidden');
+        }
+
+        function closeShortcutsModal() {
+            document.getElementById('shortcutsModal').classList.add('hidden');
+        }
+
+
+
+        function updateModuleSyncStatus(module, status) {
+            const elId = 'syncStatus' + module;
+            const el = document.getElementById(elId);
+            if (el) {
+                el.textContent = status;
+                if (status.includes('Synced')) {
+                    el.className = 'sync-status status-success';
+                } else if (status.includes('Loading') || status.includes('Unsaved')) {
+                    el.className = 'sync-status status-warning';
+                } else {
+                    el.className = 'sync-status';
+                }
+            }
+        }
+
+
+
+        // Initialize Double-Touch Editing
+        function setupDoubleTouchEditing() {
+            const lockInput = (el) => {
+                if (el.tagName === 'SELECT') {
+                    if (el.tomselect) {
+                        el.tomselect.lock();
+                    } else {
+                        // Standard select: We can't easily readonly it.
+                        // We will use a special class to prevent interaction via the global handler
+                    }
+                } else {
+                    el.setAttribute('readonly', 'true');
+                }
+                el.classList.add('touch-locked');
+            };
+
+            const unlockInput = (el) => {
+                if (el.tagName === 'SELECT') {
+                    if (el.tomselect) {
+                        el.tomselect.unlock();
+                        // Open it
+                        setTimeout(() => el.tomselect.open(), 50);
+                    }
+                } else {
+                    el.removeAttribute('readonly');
+                }
+                el.classList.remove('touch-locked');
+                el.focus();
+            };
+
+            // Public method to unlock specific input
+            window.unlockTouchInput = unlockInput;
+
+            // Public method to lock new inputs
+            window.applyTouchLocks = () => {
+                document.querySelectorAll('.excel-input').forEach(el => {
+                    // Only lock if not already processed
+                    if (!el.dataset.touchInit) {
+                        lockInput(el);
+                        el.dataset.touchInit = 'true';
+                    }
+                });
+            };
+
+            // Global Handler
+            let lastTap = 0;
+            let lastTarget = null;
+
+            document.addEventListener('click', function (e) {
+                // Find target wrapper or input
+                // For TomSelect, the click comes from .ts-wrapper or its children.
+                // We need to find the underlying Select (which is hidden but has .excel-input)
+                // OR find the wrapper which has .excel-input class in our CSS?
+                // Wait, our CSS has .ts-wrapper.excel-input
+
+                let target = e.target.closest('.excel-input');
+                let isTomSelect = false;
+
+                // Special check for TomSelect wrapper
+                if (!target) {
+                    const tsWrapper = e.target.closest('.ts-wrapper');
+                    if (tsWrapper && tsWrapper.classList.contains('excel-input')) {
+                        // Find the underlying select
+                        const select = tsWrapper.parentElement.querySelector('select');
+                        isTomSelect = true;
+                    }
+                }
+
+                if (!target) return;
+
+                // If not locked, let default happen (e.g. text entry, opening select)
+                if (!target.classList.contains('touch-locked')) return;
+
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                const isDoubleTap = tapLength < 500 && tapLength > 0;
+
+                if (isDoubleTap && (target === lastTarget || (isTomSelect && lastTarget && lastTarget.closest('.ts-wrapper')))) {
+                    // Double Tap detected -> Unlock
+                    e.preventDefault();
+                    e.stopPropagation();
+                    unlockInput(target);
+                    // Reset
+                    lastTap = 0;
+                    lastTarget = null;
+                } else {
+                    // Single Tap -> Intercept
+
+                    // If it's a select (TomSelect or Native), we MUST prevent default to stop it opening
+                    if (target.tagName === 'SELECT' || target.classList.contains('ts-wrapper')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    // For Locked Text Inputs, default behavior is "Focus but no keyboard" (if readonly).
+                    // This is desirable.
+
+                    lastTarget = target;
+                    lastTap = currentTime;
+                }
+            }, true); // Capture phase
+
+            // Re-lock on blur
+            document.addEventListener('focusout', function (e) {
+                // Delay to allow focus to move
+                setTimeout(() => {
+                    const active = document.activeElement;
+                    // If we lost focus to body or unrelated element
+                    if (active && (active.classList.contains('excel-input') || active.closest('.excel-input'))) {
+                        return; // Still editing something
+                    }
+                    // Lock everything back? 
+                    // Or just the target?
+                    // Safer to lock everything or just re-run applyTouchLocks?
+                    // Actually, we should just lock the specific element that lost focus?
+                    // Hard because TomSelect blur is complex.
+
+                    // Creating specific re-lock:
+                    // We can just iterate and lock all valid inputs that aren't active.
+                    document.querySelectorAll('.excel-input:not(.touch-locked)').forEach(el => {
+                        // Check if this element is currently focused or contains focus
+                        if (el !== active && !el.contains(active)) {
+                            // Also check TomSelect wrapper focus
+                            if (el.tomselect && el.tomselect.wrapper.contains(active)) return;
+
+                            lockInput(el);
+                        }
+                    });
+                }, 200);
+            });
+
+            // Initial Apply
+            window.applyTouchLocks();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        window.viewTransactions = function () {
+            switchView('sales');
+        };
+
+        window.manageUsers = function () {
+            switchView('users');
+        };
+
+        window.openPOS = function () {
+            switchView('pos');
+        };
+
+        // Message Listener for iframes
+        window.addEventListener('message', function (e) {
+            const { type, source, status } = e.data;
+
+            if (type === 'STATUS_UPDATE') {
+                if (source === 'adjustments') {
+                    const el = document.getElementById('adjSyncStatus');
+                    if (el) el.textContent = status;
+                }
+                // Add more sources as needed
+            }
+        });
+
+        setupKeybinds();
+    </script>
+    <!-- Hidden File Input for Excel Import -->
+    <input type="file" id="excelInput" style="display:none" accept=".csv, .xlsx, .xls"
+        onchange="handleExcelImport(this)">
+
+    <!-- Keyboard Shortcuts Help Modal -->
+    <div id="shortcutsModal" class="modal-overlay hidden" onclick="if(event.target === this) closeShortcutsModal()">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h2>
+                <button class="btn-icon" onclick="closeShortcutsModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4 style="color: var(--primary-light); margin-bottom: 10px;">Navigation</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Move Selection</span>
+                            <code>↑ / ↓</code>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Select / Edit</span>
+                            <code>Enter</code>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Go Back / Close</span>
+                            <code>Esc</code>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Focus Search</span>
+                            <code>Ctrl + F</code>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--primary-light); margin-bottom: 10px;">Actions</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Save Changes</span>
+                            <code>Ctrl + S</code>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Add New Item</span>
+                            <code>Alt + N</code>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Delete Selected</span>
+                            <code>Delete</code>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span class="text-muted">Show Shortcuts</span>
+                            <code>?</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeShortcutsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Global Loading Overlay -->
+    <div id="global-loading" class="modal-overlay hidden" style="z-index: 9999; background: rgba(15, 23, 42, 0.8);">
+        <div class="flex flex-col items-center gap-md">
+            <div class="spinner"></div>
+            <p style="color: var(--text-primary); font-weight: 500;">Please wait...</p>
+        </div>
+    </div>
+    <!-- =====================================================
+         PERMISSION ENFORCEMENT
+         Runs after auth resolves — loads role perms from Supabase,
+         stores in sessionStorage for iframe pages to read,
+         hides sidebar tabs, and guards switchView().
+    ====================================================== -->
+    <script>
+        (function () {
+            'use strict';
+
+            /**
+             * Load the logged-in user's role permissions from Supabase
+             * and apply sidebar + switchView enforcement.
+             */
+            async function initPermissions() {
+                try {
+                    // Wait for Supabase client
+                    if (typeof window.supabase === 'undefined') return;
+
+                    const { data: { session } } = await window.supabase.auth.getSession();
+                    if (!session) return; // Not logged in — auth.js will redirect
+
+                    const roleName = sessionStorage.getItem('app_user_role');
+                    if (!roleName) return;
+
+                    // Note: window.AppPermissions.fetchUserPermissions was already called during requireAuth (admin-core.js/auth.js)
+                    // So we just need to apply the UI adjustments.
+
+                    // 3. Apply sidebar visibility
+                    window.AppPermissions.applySidebar();
+
+                    // 4. Handle Restricted View Redirection
+                    // If user is on dashboard but can't access it, or if they ONLY have POS access
+                    const isDashboardForbidden = !window.AppPermissions.canAccessView('dashboard');
+                    const counts = {
+                        total: Object.keys(window.AppPermissions.VIEW_PERMISSION_MAP).length,
+                        allowed: 0
+                    };
+                    for (let key in window.AppPermissions.VIEW_PERMISSION_MAP) {
+                        if (window.AppPermissions.canAccessView(key)) counts.allowed++;
+                    }
+
+                    // Special case: "Restricted Mode" for POS-only users
+                    if (window.AppPermissions.canAccessView('pos') && counts.allowed === 1) {
+                        document.body.classList.add('restricted-mode');
+                        window.switchView('pos');
+                    } else if (isDashboardForbidden && (window.location.search.indexOf('view=') === -1 || window.location.search.indexOf('view=dashboard') !== -1)) {
+                        // Redirect to first allowed view
+                        const firstView = window.AppPermissions.getFirstAccessibleView();
+                        if (firstView && firstView !== 'dashboard') {
+                            window.switchView(firstView);
+                        }
+                    }
+
+                    // 6. Guard switchView so console bypass is blocked
+                    const _originalSwitchView = window.switchView;
+                    if (typeof _originalSwitchView === 'function') {
+                        window.switchView = function (view, params) {
+                            if (!window.AppPermissions.canAccessView(view)) {
+                                // Show access denied in main content area
+                                var mainContent = document.querySelector('.dashboard-content');
+                                if (mainContent) {
+                                    // Find or create denied overlay
+                                    var denied = document.getElementById('_permDeniedOverlay');
+                                    if (!denied) {
+                                        denied = document.createElement('div');
+                                        denied.id = '_permDeniedOverlay';
+                                        denied.style.cssText = [
+                                            'position:fixed', 'inset:0', 'z-index:9998',
+                                            'display:flex', 'flex-direction:column',
+                                            'align-items:center', 'justify-content:center',
+                                            'background:rgba(15,23,42,0.95)',
+                                            'backdrop-filter:blur(8px)', 'gap:16px'
+                                        ].join(';');
+                                        denied.innerHTML = [
+                                            '<div style="font-size:3rem;color:#ef4444"><i class="fas fa-lock"></i></div>',
+                                            '<h2 style="color:#f1f5f9;margin:0;font-size:1.5rem">Access Denied</h2>',
+                                            '<p style="color:#94a3b8;margin:0">You don\'t have permission to access this section.</p>',
+                                            '<button onclick="document.getElementById(\'_permDeniedOverlay\').remove()" style="',
+                                            'background:#4f46e5;color:#fff;border:none;padding:10px 24px;',
+                                            'border-radius:8px;cursor:pointer;font-size:0.9rem;font-weight:600;">Go Back</button>'
+                                        ].join('');
+                                        document.body.appendChild(denied);
+                                    } else {
+                                        denied.style.display = 'flex';
+                                    }
+                                }
+                                return;
+                            }
+                            // Remove denied overlay if visible
+                            var denied = document.getElementById('_permDeniedOverlay');
+                            if (denied) denied.remove();
+                            return _originalSwitchView.call(window, view, params);
+                        };
+                    }
+
+                } catch (e) {
+                    console.warn('[Permissions] Could not load permissions:', e);
+                }
+            }
+
+            // Run after page + scripts load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function () { setTimeout(initPermissions, 300); });
+            } else {
+                setTimeout(initPermissions, 300);
+            }
+        })();
+    </script>
+</body>
+
+</html>

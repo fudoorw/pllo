@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Categories - POS System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: transparent;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        .sheet-container {
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        .glass-toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .sync-status {
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sync-status.pending {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        /* Bulk Toolbar */
+        .bulk-toolbar {
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bulk-toolbar.visible {
+            display: flex !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Grid */
+        .sheet-wrapper {
+            flex: 1;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 0;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            min-height: 44px;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        tr:hover td {
+            background: rgba(99, 102, 241, 0.03);
+        }
+
+        tr.modified td {
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        tr.new-row td {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .cell-container {
+            width: 100%;
+            height: 100%;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            transition: all 0.2s ease;
+        }
+
+        .cell-input {
+            flex: 1;
+            height: 32px;
+            padding: 0 6px;
+            border: none;
+            outline: none;
+            font-size: 0.875rem;
+            background: transparent;
+            color: inherit;
+            width: 100%;
+            font-family: inherit;
+        }
+
+        .cell-container:focus-within {
+            background: rgba(99, 102, 241, 0.12);
+            box-shadow: inset 0 0 0 1px var(--primary);
+        }
+
+        .cell-input:focus {
+            background: transparent;
+            box-shadow: none;
+        }
+
+        /* Checkbox */
+        .check-col {
+            width: 44px;
+            text-align: center;
+            background: var(--bg-secondary);
+            position: sticky;
+            left: 0;
+            z-index: 55;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .row-idx {
+            background: var(--bg-secondary);
+            text-align: center;
+            width: 48px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            position: sticky;
+            left: 44px;
+            z-index: 45;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .action-cell {
+            width: 52px;
+            text-align: center;
+            background: var(--bg-secondary);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Custom Checkbox */
+        .checkbox-container {
+            display: block;
+            position: relative;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            user-select: none;
+            margin: 0 auto;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+            z-index: -1;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 18px;
+            width: 18px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container:hover input~.checkmark {
+            background-color: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-light);
+        }
+
+        .checkbox-container input:checked~.checkmark {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .checkbox-container input:checked~.checkmark:after {
+            display: block;
+        }
+
+        .checkbox-container .checkmark:after {
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .empty-state {
+            padding: 60px;
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sheet-container">
+        <!-- Toolbar -->
+        <div class="glass-toolbar">
+            <div class="flex items-center gap-4">
+                <span id="syncStatus" class="sync-status">Ready</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <!-- Bulk Toolbar -->
+                <div id="bulkToolbar" class="bulk-toolbar">
+                    <span style="font-size: 12px; color: var(--text-secondary);">
+                        <span id="selectedCount">0</span> selected
+                    </span>
+                    <button class="btn btn-danger" onclick="bulkDelete()">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearSelection()" title="Clear">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <button class="btn btn-secondary" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button class="btn btn-primary" onclick="addNewCategory()">
+                    <i class="fas fa-plus"></i> Add Row
+                </button>
+                <button class="btn btn-success" onclick="saveChanges()" id="saveBtn">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="sheet-wrapper" id="gridWrapper">
+            <table id="gridTable">
+                <thead>
+                    <tr id="gridHeader"></tr>
+                </thead>
+                <tbody id="gridBody">
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 10px;"></i><br>
+                            Loading categories...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/expense-categories.js"></script>
+</body>
+
+</html>

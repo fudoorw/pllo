@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotion Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-percentage" style="color:var(--red)"></i> Promotion Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Promotion Usage</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Vouchers Used</div>
+                <div class="ds-v" id="h-prom-count">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Discount Value</div>
+                <div class="ds-v" id="h-prom-val" style="color:var(--red)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Sales Impact</div>
+                <div class="ds-v" id="h-prom-rev" style="color:var(--green)">0 Ks</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-m">
+                            <div class="cell-container">CODE</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">BARCODE</div>
+                        </th>
+                        <th class="col-l">
+                            <div class="cell-container">DESCRIPTION</div>
+                        </th>
+                        <th class="col-l">
+                            <div class="cell-container">PROMOTION TITLE</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">PROMOTION CODE</div>
+                        </th>
+                        <th class="col-l">
+                            <div class="cell-container">PROMOTION STATUS</div>
+                        </th>
+                        <th class="col-s">
+                            <div class="cell-container">SALE QTY</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">DISCOUNT/SAVE TOTAL AMOUNT</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">SUPPLIER NAME</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="tb-promotion-report"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-promotion-report"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'promotion-report';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            const count = DATA.reduce((a, b) => a + (b.count || 0), 0);
+            const disc = DATA.reduce((a, b) => a + (b.disc || 0), 0);
+            const rev = DATA.reduce((a, b) => a + (b.rev || 0), 0);
+
+            document.getElementById('h-prom-count').innerText = count;
+            document.getElementById('h-prom-val').innerText = fmt(disc) + ' Ks';
+            document.getElementById('h-prom-rev').innerText = fmt(rev) + ' Ks';
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                body.innerHTML = sl.map(r => `
+                    <tr>
+                        <td><div class="cell-container">${r.item_code || ''}</div></td>
+                        <td><div class="cell-container">${r.barcode || ''}</div></td>
+                        <td class="te"><div class="cell-container">${r.name || ''}</div></td>
+                        <td class="te"><div class="cell-container">${r.promo_title || ''}</div></td>
+                        <td><div class="cell-container">${r.promo_code || ''}</div></td>
+                        <td class="te"><div class="cell-container">${r.promo_status || ''}</div></td>
+                        <td><div class="cell-container">${r.qty || 0}</div></td>
+                        <td class="ta" style="color:var(--red)"><div class="cell-container">${fmt(r.disc)}</div></td>
+                        <td class="te"><div class="cell-container">${r.supplier || ''}</div></td>
+                    </tr>
+                `).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

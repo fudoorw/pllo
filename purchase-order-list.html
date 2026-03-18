@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order List</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: transparent;
+            margin: 0;
+            padding: 16px;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        .btn-indigo {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-indigo:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Search */
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            outline: none;
+            margin-bottom: 16px;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary);
+        }
+
+        .search-box::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Sheet Container */
+        .sheet-container {
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* The Grid */
+        .sheet-wrapper {
+            flex: 1;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            overflow: auto;
+            position: relative;
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 14px 12px;
+            text-align: left;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            padding: 10px 12px !important;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .resizer {
+            position: absolute;
+            right: -12px;
+            top: -14px;
+            bottom: -14px;
+            width: 8px;
+            cursor: col-resize;
+            z-index: 10;
+        }
+
+        .resizer:hover {
+            background: var(--primary);
+            opacity: 0.5;
+        }
+
+        tr:hover td {
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .row-idx {
+            background: var(--bg-secondary);
+            text-align: center;
+            width: 50px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            position: sticky;
+            left: 0;
+            z-index: 45;
+            padding: 14px 8px !important;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 64px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            justify-content: space-between;
+        }
+
+        .status-bar .label {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .status-bar .val-green {
+            color: #34d399;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .status-bar .val-blue {
+            color: #60a5fa;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .status-bar .val-rose {
+            color: #f87171;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .status-bar .text-muted {
+            color: var(--text-muted);
+        }
+
+        /* Filter Popup */
+        .filter-popup {
+            display: none;
+        }
+
+        .filter-popup.show {
+            display: block;
+        }
+
+        .overlay {
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .filter-popup {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 340px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            padding: 24px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .popup-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .popup-header h3 i {
+            margin-right: 8px;
+        }
+
+        .popup-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .popup-close:hover {
+            color: var(--text-primary);
+        }
+
+        .popup-body {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .popup-field label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .popup-footer {
+            margin-top: 24px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .popup-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .popup-btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .popup-btn-secondary:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .popup-btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .popup-btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .popup-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .popup-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .popup-input option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+
+        /* Empty State */
+        .empty-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state span {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Action Button */
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="btn btn-success" style="cursor: default;">
+            <i class="fas fa-database"></i> <span id="syncStatusText">Ready</span>
+        </div>
+
+        <div id="bulkToolbar" class="btn btn-indigo" style="display: none; cursor: pointer;">
+            <span id="selectedCount">0</span> Selected
+            <i class="fas fa-trash" onclick="bulkDelete()" style="margin-left: 8px; color: #fca5a5;"></i>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <button class="btn btn-secondary" onclick="openFilterPopup()">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+
+        <button class="btn btn-secondary" onclick="refreshData()">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+
+        <button class="btn btn-indigo" onclick="exportToExcel()">
+            <i class="fas fa-file-excel"></i> Export
+        </button>
+
+        <button class="btn btn-success"
+            onclick="if(window.parent && window.parent.switchView) window.parent.switchView('purchase-order'); else window.location.href='purchaseorder.html';">
+            <i class="fas fa-plus"></i> New Order
+        </button>
+    </div>
+
+    <!-- Search -->
+    <input type="text" id="searchBox" class="search-box" placeholder="Search by PO number, supplier, or notes..."
+        oninput="applyFilters()">
+
+    <!-- Filter Popup -->
+    <div class="overlay hidden" id="overlay" onclick="closeFilterPopup()"></div>
+    <div class="filter-popup hidden" id="filterPopup">
+        <div class="popup-header">
+            <h3><i class="fas fa-filter"></i>Filters</h3>
+            <button onclick="closeFilterPopup()" class="popup-close">&times;</button>
+        </div>
+
+        <div class="popup-body">
+            <div class="popup-field">
+                <label>Date Range</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <input type="date" id="filterDateFrom" class="popup-input">
+                    <input type="date" id="filterDateTo" class="popup-input">
+                </div>
+            </div>
+
+            <div class="popup-field">
+                <label>PO Number</label>
+                <input type="text" id="filterOrder" class="popup-input" placeholder="PO-0001">
+            </div>
+
+            <div class="popup-field">
+                <label>Warehouse</label>
+                <select id="filterShop" class="popup-input">
+                    <option value="">All Warehouses</option>
+                </select>
+            </div>
+
+            <div class="popup-field">
+                <label>Supplier</label>
+                <select id="filterSupplier" class="popup-input">
+                    <option value="">All Suppliers</option>
+                </select>
+            </div>
+
+            <div class="popup-field">
+                <label>Status</label>
+                <select id="filterStatus" class="popup-input">
+                    <option value="">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Ordered">Ordered</option>
+                    <option value="Received">Received</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+
+            <div class="popup-field">
+                <label>Payment Type</label>
+                <select id="filterPayment" class="popup-input">
+                    <option value="">All Types</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Credit">Credit</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Consignment">Consignment</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="popup-footer">
+            <button onclick="resetFilters()" class="popup-btn popup-btn-secondary">Reset</button>
+            <button onclick="applyFilters(); closeFilterPopup();" class="popup-btn popup-btn-primary">Apply</button>
+        </div>
+    </div>
+
+    <!-- Sheet Container -->
+    <div class="sheet-container">
+        <div class="sheet-wrapper" id="gridWrapper">
+            <table id="gridTable">
+                <thead>
+                    <tr id="gridHeader"></tr>
+                </thead>
+                <tbody id="gridBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-inbox"></i>
+                <span>No Data</span>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div style="display: flex; gap: 48px;">
+                <div><span class="label">Subtotal</span><br><span id="totalAmount" class="val-green">0</span></div>
+                <div><span class="label">Net Total</span><br><span id="totalNet" class="val-green">0</span></div>
+                <div><span class="label">Paid</span><br><span id="totalPaid" class="val-blue">0</span></div>
+                <div><span class="label">Remaining</span><br><span id="totalRemain" class="val-rose">0</span></div>
+            </div>
+            <div id="activityLog" class="text-muted">Grid Ready</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/purchase-order-list.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/datepicker-init.js"></script>
+</body>
+
+</html>

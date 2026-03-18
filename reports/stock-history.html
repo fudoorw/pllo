@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Stock History Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+    <style>
+        .tshell table {
+            min-width: 100%;
+            width: 100%;
+        }
+
+        .tshell th,
+        .tshell td {
+            padding: 4px 8px;
+        }
+
+        th:nth-child(1) { width: 40px; min-width: 40px; }
+        th:nth-child(2) { width: 90px; min-width: 90px; }
+        th:nth-child(3) { width: 100px; min-width: 100px; }
+        th:nth-child(4) { width: 90px; min-width: 90px; }
+        th:nth-child(5) { width: auto; min-width: 120px; }
+        th:nth-child(6) { width: 80px; min-width: 80px; }
+        th:nth-child(7) { width: 80px; min-width: 80px; }
+        th:nth-child(8) { width: 80px; min-width: 80px; }
+        th:nth-child(9) { width: 100px; min-width: 100px; }
+        th:nth-child(10) { width: 90px; min-width: 90px; }
+        th:nth-child(11) { width: 100px; min-width: 100px; }
+        th:nth-child(12) { width: 100px; min-width: 100px; }
+        th:nth-child(13) { width: 80px; min-width: 80px; }
+        th:nth-child(14) { width: 90px; min-width: 90px; }
+    </style>
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-boxes" style="color:var(--blue)"></i> Stock Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Product Stock History</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Total Records</div>
+                <div class="ds-v" id="h-total-count" style="color:var(--blue)">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Stock In</div>
+                <div class="ds-v" id="h-total-in" style="color:var(--green)">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Stock Out</div>
+                <div class="ds-v" id="h-total-out" style="color:var(--red)">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Net Change</div>
+                <div class="ds-v" id="h-net-change" style="color:var(--yellow)">0</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="row-num">#</th>
+                        <th>DATE</th>
+                        <th>ITEM CODE</th>
+                        <th>BARCODE</th>
+                        <th>DESCRIPTION</th>
+                        <th>OPENING QTY</th>
+                        <th>PURCHASE QTY</th>
+                        <th>SALE QTY</th>
+                        <th>PURCHASE RETURN</th>
+                        <th>SALE RETURN</th>
+                        <th>TRANSFER (+)/(-)</th>
+                        <th>ADJUSTMENT (+)/(-)</th>
+                        <th>CLOSING QTY</th>
+                        <th>SHOP</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-stock-history"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-stock-history"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'stock-history';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            const totalRecords = DATA.length;
+            const totalPurchase = DATA.reduce((a, b) => a + (b.purchaseQty || 0), 0);
+            const totalSale = DATA.reduce((a, b) => a + (b.saleQty || 0), 0);
+            const totalPurReturn = DATA.reduce((a, b) => a + (b.purchaseReturnQty || 0), 0);
+            const totalSaleReturn = DATA.reduce((a, b) => a + (b.saleReturnQty || 0), 0);
+
+            const totalIn = totalPurchase + totalPurReturn + totalSaleReturn;
+            const totalOut = totalSale;
+
+            if (document.getElementById('h-total-count')) document.getElementById('h-total-count').innerText = fmt(totalRecords);
+            if (document.getElementById('h-total-in')) document.getElementById('h-total-in').innerText = fmt(totalIn);
+            if (document.getElementById('h-total-out')) document.getElementById('h-total-out').innerText = fmt(totalOut);
+            if (document.getElementById('h-net-change')) document.getElementById('h-net-change').innerText = fmt(totalIn - totalOut);
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:20px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:18px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                const startNum = pg * PS + 1;
+                body.innerHTML = sl.map((r, idx) => {
+                    const transferVal = r.transferQty || 0;
+                    const adjustVal = r.adjustmentQty || 0;
+                    return `
+                        <tr>
+                            <td class="row-num">${startNum + idx}</td>
+                            <td><div class="cell-container">${r.dateTime || '-'}</div></td>
+                            <td><div class="cell-container"><b>${r.itemCode || '-'}</b></div></td>
+                            <td><div class="cell-container">${r.barcode || '-'}</div></td>
+                            <td><div class="cell-container">${r.description || '-'}</div></td>
+                            <td><div class="cell-container ta">${fmt(r.openingQty || 0)}</div></td>
+                            <td><div class="cell-container ta" style="color:var(--green)">${fmt(r.purchaseQty || 0)}</div></td>
+                            <td><div class="cell-container ta" style="color:var(--red)">${fmt(r.saleQty || 0)}</div></td>
+                            <td><div class="cell-container ta" style="color:var(--green)">${fmt(r.purchaseReturnQty || 0)}</div></td>
+                            <td><div class="cell-container ta" style="color:var(--green)">${fmt(r.saleReturnQty || 0)}</div></td>
+                            <td><div class="cell-container ta" style="color:${transferVal >= 0 ? 'var(--green)' : 'var(--red)'}">${transferVal >= 0 ? '+' : ''}${fmt(transferVal)}</div></td>
+                            <td><div class="cell-container ta" style="color:${adjustVal >= 0 ? 'var(--green)' : 'var(--red)'}">${adjustVal >= 0 ? '+' : ''}${fmt(adjustVal)}</div></td>
+                            <td><div class="cell-container ta">${fmt(r.closingQty || 0)}</div></td>
+                            <td><div class="cell-container">${r.shop || 'Main Shop'}</div></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            if (typeof renderPager === 'function') renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

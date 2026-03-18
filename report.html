@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #0d1829;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-h: rgba(255, 255, 255, 0.15);
+            --primary: #6366f1;
+            --primary-l: #818cf8;
+            --yellow: #fbbf24;
+            --yellow-d: rgba(251, 191, 36, .1);
+            --green: #10b981;
+            --green-d: rgba(16, 185, 129, .1);
+            --blue: #3b82f6;
+            --blue-d: rgba(59, 130, 246, .1);
+            --red: #ef4444;
+            --red-d: rgba(239, 68, 68, .1);
+            --purple: #a855f7;
+            --purple-d: rgba(168, 85, 247, .1);
+            --orange: #f97316;
+            --orange-d: rgba(249, 115, 22, .1);
+            --t1: #f1f5f9;
+            --t2: #cbd5e1;
+            --t3: #94a3b8;
+            --t4: #475569;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html,
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg-primary);
+            color: var(--t1);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            line-height: 1.5
+        }
+
+        .shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw
+        }
+
+        /* TOPBAR */
+        .topbar {
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            gap: 10px
+        }
+
+        .tb-l {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .logo {
+            background: var(--yellow);
+            color: #000;
+            font-weight: 800;
+            font-size: 10px;
+            padding: 3px 9px;
+            letter-spacing: .1em
+        }
+
+        .tb-title {
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: .04em;
+            text-transform: uppercase
+        }
+
+        .tb-r {
+            display: flex;
+            align-items: center;
+            gap: 7px
+        }
+
+        .vsep {
+            width: 1px;
+            height: 18px;
+            background: var(--border)
+        }
+
+        .ctrl {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--t2);
+            border-radius: 5px;
+            padding: 4px 9px;
+            font-size: 12px;
+            outline: none;
+            font-family: inherit;
+            transition: border-color .15s
+        }
+
+        .ctrl:focus {
+            border-color: var(--primary)
+        }
+
+        .ctrl[type=date] {
+            color: var(--t3);
+            width: 128px
+        }
+
+        .sw {
+            position: relative
+        }
+
+        .sw i {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--t3);
+            font-size: 10px;
+            pointer-events: none
+        }
+
+        .sw .ctrl {
+            padding-left: 26px;
+            width: 160px
+        }
+
+        .btn-apply {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 4px 13px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background .15s
+        }
+
+        .btn-apply:hover {
+            background: var(--primary-l)
+        }
+
+        .btn-back {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--t3);
+            border-radius: 5px;
+            padding: 4px 11px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all .15s
+        }
+
+        .btn-back:hover {
+            border-color: var(--border-h);
+            color: var(--t1)
+        }
+
+        /* PAGES */
+        .page {
+            display: none;
+            flex: 1;
+            overflow: hidden
+        }
+
+        .page.active {
+            display: flex;
+            flex-direction: column
+        }
+
+        /* ─── HOME ─────────────────────────────────── */
+        #page-home.active {
+            padding: 8px 18px;
+            gap: 8px;
+            height: calc(100vh - 50px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 9px;
+            flex-shrink: 0
+        }
+
+        .kpi {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 11px 13px;
+            cursor: pointer;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden
+        }
+
+        .kpi::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity .2s
+        }
+
+        .kpi:hover {
+            border-color: var(--border-h);
+            transform: translateY(-1px)
+        }
+
+        .kpi:hover::before {
+            opacity: 1
+        }
+
+        .kpi.c-y {
+            border-top: 2px solid var(--yellow)
+        }
+
+        .kpi.c-y::before {
+            background: var(--yellow-d)
+        }
+
+        .kpi.c-g {
+            border-top: 2px solid var(--green)
+        }
+
+        .kpi.c-g::before {
+            background: var(--green-d)
+        }
+
+        .kpi.c-b {
+            border-top: 2px solid var(--blue)
+        }
+
+        .kpi.c-b::before {
+            background: var(--blue-d)
+        }
+
+        .kpi.c-p {
+            border-top: 2px solid var(--purple)
+        }
+
+        .kpi.c-p::before {
+            background: var(--purple-d)
+        }
+
+        .kpi.c-o {
+            border-top: 2px solid var(--orange)
+        }
+
+        .kpi.c-o::before {
+            background: var(--orange-d)
+        }
+
+        .kpi.c-r {
+            border-top: 2px solid var(--red)
+        }
+
+        .kpi.c-r::before {
+            background: var(--red-d)
+        }
+
+        .kpi-lbl {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--t3);
+            margin-bottom: 3px
+        }
+
+        .kpi-val {
+            font-size: 21px;
+            font-weight: 800;
+            color: var(--t1);
+            line-height: 1
+        }
+
+        .kpi-sub {
+            font-size: 10px;
+            color: var(--t3);
+            margin-top: 3px
+        }
+
+        .up {
+            color: var(--green)
+        }
+
+        .dn {
+            color: var(--red)
+        }
+
+        .mid-row {
+            display: grid;
+            grid-template-columns: 1fr 250px 250px;
+            gap: 10px;
+            flex: 1;
+            min-height: 0
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .ch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 13px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0
+        }
+
+        .ch-t {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--t1);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .ch-a {
+            font-size: 11px;
+            color: var(--primary-l);
+            cursor: pointer;
+            transition: color .15s
+        }
+
+        .ch-a:hover {
+            color: #fff
+        }
+
+        .cb {
+            flex: 1;
+            overflow: hidden;
+            padding: 5px 13px;
+            /* Reduced for tighter look */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* bar chart */
+        .chart-container {
+            position: relative;
+            flex: 1;
+            /* Stretch to fill card body */
+            min-height: 160px;
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+            /* Reduced top margin */
+        }
+
+        .y-axis {
+            width: 50px;
+            height: calc(100% - 22px);
+            /* Matches new padding-bottom */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-right: 8px;
+            font-size: 9px;
+            color: var(--t4);
+            border-right: 1px solid var(--border);
+            position: relative;
+        }
+
+        .y-label {
+            position: absolute;
+            left: -35px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-size: 10px;
+            color: var(--t4);
+            white-space: nowrap;
+        }
+
+        .barchart {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            position: relative;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px);
+            background-size: 100% 25%;
+            padding-bottom: 22px;
+            /* Increased for breathing room */
+        }
+
+        .barchart::after {
+            content: '';
+            position: absolute;
+            bottom: 21px;
+            /* Matches padding-bottom minus 1px */
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border)
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--border-h);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .ct-date {
+            font-weight: 700;
+            margin-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 4px;
+            color: var(--t1);
+        }
+
+        .ct-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 2px 0;
+        }
+
+        .ct-val {
+            font-weight: 600;
+        }
+
+        .ct-s {
+            color: #818cf8;
+        }
+
+        /* Primary color for sales tooltip text */
+        .ct-p {
+            color: #34d399;
+        }
+
+        /* Green color for purchase tooltip text */
+
+        .bw {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .bbar {
+            width: 100%;
+            border-radius: 3px 3px 0 0;
+            transition: .2s;
+            cursor: pointer;
+            position: relative
+        }
+
+        .bbar:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .bw:hover .blbl {
+            color: var(--t1);
+            font-weight: 700;
+        }
+
+        .blbl {
+            position: absolute;
+            bottom: -18px;
+            /* Lowered to clear the bar base */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            color: var(--t4);
+            white-space: nowrap;
+        }
+
+        /* Dual bars */
+        .bw-dual {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .bw-dual .bbar {
+            flex: 1;
+            width: auto;
+            min-width: 4px;
+        }
+
+        .bbar.purchase {
+            background: #10b981;
+        }
+
+        .bbar.sale {
+            background: #6366f1;
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 12px;
+            font-size: 10px;
+            color: var(--t3);
+            margin-left: 20px;
+        }
+
+        .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .leg-box {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        /* donut */
+        .donut-r {
+            position: relative;
+            display: inline-flex
+        }
+
+        .dc {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none
+        }
+
+        .dc-v {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--t1)
+        }
+
+        .dc-l {
+            font-size: 9px;
+            color: var(--t3);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .leg {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%
+        }
+
+        .li {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background .12s
+        }
+
+        .li:hover {
+            background: var(--border)
+        }
+
+        .ld {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            flex-shrink: 0
+        }
+
+        .ln {
+            flex: 1;
+            font-size: 11px;
+            color: var(--t2)
+        }
+
+        .lv {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--t1)
+        }
+
+        .lp {
+            font-size: 10px;
+            color: var(--t3);
+            width: 26px;
+            text-align: right
+        }
+
+        /* bottom section cards */
+        .bot-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            flex: 1;
+            min-height: 0
+        }
+
+        .rc {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 8px 10px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: all .18s;
+            overflow: hidden
+        }
+
+        .rc:hover {
+            border-color: var(--border-h);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .3)
+        }
+
+        .rc-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .rnum {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 800;
+            flex-shrink: 0
+        }
+
+        .rtitle {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--t1);
+            text-transform: uppercase;
+            letter-spacing: .04em
+        }
+
+        .ri-icon {
+            font-size: 15px;
+            opacity: .4
+        }
+
+        .rlinks {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 4px
+        }
+
+        .rl {
+            font-size: 10px;
+            color: var(--t3);
+            padding: 6px 10px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            font-weight: 500
+        }
+
+        .rl i {
+            font-size: 8px;
+            opacity: 0.7
+        }
+
+        .rc:hover .rl {
+            border-color: rgba(255, 255, 255, 0.1);
+            color: var(--t2)
+        }
+
+        .rl:hover {
+            background: var(--primary);
+            color: #fff !important;
+            border-color: var(--primary);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3)
+        }
+
+        .rstat {
+            font-size: 10px;
+            color: var(--t4);
+            padding-top: 5px;
+            border-top: 1px solid var(--border);
+            margin-top: auto
+        }
+
+        /* IFRAME FOR REPORTS */
+        #reportFrame {
+            display: none;
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .1);
+            border-radius: 6px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, .2)
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="shell">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="tb-l">
+                <button class="btn-back" id="btnBack" onclick="goHome()"><i class="fas fa-arrow-left"></i>
+                    Back</button>
+                <span id="topTitle"
+                    style="color: var(--t1); font-weight: 600; font-size: 13px; margin-left: 10px;"></span>
+                <select id="warehouse-filter" class="excel-input" style="background:var(--bg-primary); color:white; padding: 5px; border-radius:4px; margin-left:10px;">
+                    <option value="">All Warehouses</option>
+                </select>
+            </div>
+            <div class="tb-r">
+                <div class="sw"><i class="fas fa-search"></i><input class="ctrl" type="text" id="si"
+                        placeholder="Search…" oninput="onSearch()"></div>
+                <div class="vsep"></div>
+                <input class="ctrl" type="date" id="df">
+                <span style="color:var(--t4);font-size:11px">–</span>
+                <input class="ctrl" type="date" id="dt">
+                <button class="btn-apply" onclick="applyF()">Apply</button>
+                <button class="btn-apply" style="background:var(--green)" onclick="exportCurrentReport()"><i
+                        class="fas fa-file-excel"></i> Export</button>
+            </div>
+        </div>
+
+        <!-- ═════════════ HOME ═════════════ -->
+        <div class="page active" id="page-home">
+
+            <!-- KPI ROW -->
+            <div class="kpi-row">
+                <div class="kpi c-y" onclick="openDetail('sale-detail')">
+                    <div class="kpi-lbl">Total Revenue</div>
+                    <div class="kpi-val" id="kpi-rev">0</div>
+                    <div class="kpi-sub"><span id="kpi-rev-trend" class="up">▲ 0%</span> vs last month</div>
+                </div>
+                <div class="kpi c-g" onclick="openDetail('purchase-detail')">
+                    <div class="kpi-lbl">Purchases</div>
+                    <div class="kpi-val" id="kpi-purch">0</div>
+                    <div class="kpi-sub"><span id="kpi-purch-trend" class="dn">▼ 0%</span> vs last month</div>
+                </div>
+                <div class="kpi c-b" onclick="openDetail('stock-report')">
+                    <div class="kpi-lbl">Stock Value</div>
+                    <div class="kpi-val" id="kpi-stock">0</div>
+                    <div class="kpi-sub"><span id="kpi-stock-trend" class="up">▲ 0%</span> current</div>
+                </div>
+                <div class="kpi c-p" onclick="openDetail('customer-report')">
+                    <div class="kpi-lbl">Customers</div>
+                    <div class="kpi-val" id="kpi-cust">0</div>
+                    <div class="kpi-sub"><span id="kpi-cust-trend" class="up">+0</span> new this month</div>
+                </div>
+                <div class="kpi c-o" onclick="openDetail('supplier-report')">
+                    <div class="kpi-lbl">Suppliers</div>
+                    <div class="kpi-val" id="kpi-sup">0</div>
+                    <div class="kpi-sub" id="kpi-sup-sub">0 pending orders</div>
+                </div>
+                <div class="kpi c-r" onclick="openDetail('low-stock')">
+                    <div class="kpi-lbl">Low Stock</div>
+                    <div class="kpi-val" id="kpi-low">0</div>
+                    <div class="kpi-sub" id="kpi-low-sub">Needs reorder</div>
+                </div>
+            </div>
+
+            <div class="mid-row">
+                <div class="card">
+                    <div class="ch">
+                        <span class="ch-t">Sales & Purchases Trend</span>
+                        <div class="chart-legend">
+                            <div class="leg-item">
+                                <div class="leg-box" style="background:#6366f1"></div> Sales
+                            </div>
+                            <div class="leg-item">
+                                <div class="leg-box" style="background:#10b981"></div> Purchases
+                            </div>
+                        </div>
+                        <span class="ch-a" onclick="openDetail('sale-detail')">View Detail →</span>
+                    </div>
+                    <div class="cb">
+                        <div class="chart-container" style="padding-left: 30px;">
+                            <div class="y-axis" id="yAxis">
+                                <div class="y-label">Amount (Ks)</div>
+                            </div>
+                            <div class="barchart" id="barChart"></div>
+                            <div class="chart-tooltip" id="chartTooltip"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="ch"><span class="ch-t">Payment Methods</span><span class="ch-a"
+                            onclick="openDetail('sale-summary')">Summary →</span></div>
+                    <div class="cb"
+                        style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px">
+                        <div class="donut-r"><svg width="105" height="105" viewBox="0 0 105 105" id="dSale"></svg>
+                            <div class="dc">
+                                <div class="dc-v" id="donut-sale-count">0</div>
+                                <div class="dc-l">Sales</div>
+                            </div>
+                        </div>
+                        <div class="leg" id="lSale"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="ch"><span class="ch-t">Stock Status</span><span class="ch-a"
+                            onclick="openDetail('stock-report')">Detail →</span></div>
+                    <div class="cb"
+                        style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px">
+                        <div class="donut-r"><svg width="105" height="105" viewBox="0 0 105 105" id="dStock"></svg>
+                            <div class="dc">
+                                <div class="dc-v" id="donut-stock-count">0</div>
+                                <div class="dc-l">Products</div>
+                            </div>
+                        </div>
+                        <div class="leg" id="lStock"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM ROW - 9 CARDS IN 6-COLUMN GRID -->
+            <div class="bot-row">
+                <!-- 1 SALE REPORT -->
+                <div class="rc" onclick="openDetail('sale-detail')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:var(--yellow-d);color:var(--yellow)">1</div>
+                            <span class="rtitle">Sale Report</span>
+                        </div>
+                        <i class="fas fa-shopping-cart ri-icon" style="color:var(--yellow)"></i>
+                    </div>
+                    <div class="rlinks">
+                        <div class="rl" onclick="event.stopPropagation();openDetail('sale-detail')"><i
+                                class="fas fa-chevron-right"></i> Sale Detail Report</div>
+                        <div class="rl" onclick="event.stopPropagation();openDetail('sale-summary')"><i
+                                class="fas fa-chevron-right"></i> Sale Summary Report</div>
+                    </div>
+                </div>
+
+                <!-- 2 PURCHASE REPORT -->
+                <div class="rc" onclick="openDetail('purchase-detail')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:var(--green-d);color:var(--green)">2</div>
+                            <span class="rtitle">Purchase Report</span>
+                        </div>
+                        <i class="fas fa-truck ri-icon" style="color:var(--green)"></i>
+                    </div>
+                    <div class="rlinks">
+                        <div class="rl" onclick="event.stopPropagation();openDetail('purchase-detail')"><i
+                                class="fas fa-chevron-right"></i> Purchase Detail Report</div>
+                        <div class="rl" onclick="event.stopPropagation();openDetail('purchase-summary')"><i
+                                class="fas fa-chevron-right"></i> Purchase Summary Report</div>
+                    </div>
+                </div>
+
+                <!-- 3 STOCK REPORT -->
+                <div class="rc" onclick="openDetail('stock-report')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:var(--blue-d);color:var(--blue)">3</div>
+                            <span class="rtitle">Stock Report</span>
+                        </div>
+                        <i class="fas fa-boxes ri-icon" style="color:var(--blue)"></i>
+                    </div>
+                    <div class="rlinks">
+                        <div class="rl" onclick="event.stopPropagation();openDetail('stock-report')"><i
+                                class="fas fa-chevron-right"></i> Stock Report Detail</div>
+                        <div class="rl" onclick="event.stopPropagation();openDetail('stock-history')"><i
+                                class="fas fa-chevron-right"></i> Product Stock History Report</div>
+                        <div class="rl" onclick="event.stopPropagation();openDetail('top-selling')"><i
+                                class="fas fa-chevron-right"></i> Top Selling Item Report</div>
+                    </div>
+                </div>
+
+                <!-- 4 SUPPLIER REPORT -->
+                <div class="rc" onclick="openDetail('supplier-report')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:var(--purple-d);color:var(--purple)">4</div>
+                            <span class="rtitle">Supplier Report</span>
+                        </div>
+                        <i class="fas fa-industry ri-icon" style="color:var(--purple)"></i>
+                    </div>
+                    <div class="rlinks">
+                        <div class="rl" onclick="event.stopPropagation();openDetail('supplier-outstanding')"><i
+                                class="fas fa-chevron-right"></i> Supplier Outstanding</div>
+                    </div>
+                </div>
+
+                <!-- 5 CUSTOMER REPORT -->
+                <div class="rc" onclick="openDetail('customer-report')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:var(--orange-d);color:var(--orange)">5</div>
+                            <span class="rtitle">Customer Report</span>
+                        </div>
+                        <i class="fas fa-users ri-icon" style="color:var(--orange)"></i>
+                    </div>
+                    <div class="rlinks">
+                        <div class="rl" onclick="event.stopPropagation();openDetail('customer-outstanding')"><i
+                                class="fas fa-chevron-right"></i> Customer Outstanding</div>
+                    </div>
+                </div>
+
+                <!-- 6 PROFIT & LOSS -->
+                <div class="rc" onclick="openDetail('profit-loss')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:rgba(16,185,129,.1);color:var(--green)">6</div>
+                            <span class="rtitle">Profit & Loss</span>
+                        </div>
+                        <i class="fas fa-chart-line ri-icon" style="color:var(--green)"></i>
+                    </div>
+                </div>
+
+                <!-- 7 PROMOTION REPORT -->
+                <div class="rc" onclick="openDetail('promotion-report')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:rgba(239,68,68,.1);color:var(--red)">7</div>
+                            <span class="rtitle">Promotion Report</span>
+                        </div>
+                        <i class="fas fa-tags ri-icon" style="color:var(--red)"></i>
+                    </div>
+                </div>
+
+                <!-- 8 CASH BOOK -->
+                <div class="rc" onclick="openDetail('cash-book')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:var(--yellow-d);color:var(--yellow)">8</div>
+                            <span class="rtitle">Cash Book</span>
+                        </div>
+                        <i class="fas fa-book ri-icon" style="color:var(--yellow)"></i>
+                    </div>
+                </div>
+
+                <!-- 9 LOG REPORT (Image shows 6) -->
+                <div class="rc" onclick="openDetail('log-report')">
+                    <div class="rc-head">
+                        <div style="display:flex;align-items:center;gap:7px">
+                            <div class="rnum" style="background:rgba(148,163,184,.1);color:var(--t3)">6</div>
+                            <span class="rtitle">Log Report</span>
+                        </div>
+                        <i class="fas fa-terminal ri-icon" style="color:var(--t3)"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IFRAME FOR REPORTS -->
+        <iframe id="reportFrame" src="about:blank"
+            style="display:none; flex:1; border:none; width:100%; height:100%;"></iframe>
+
+    </div>
+    <script src="js/app-config.js"></script>
+    <script>
+        const supabaseUrl = 'https://jjjdzpmxyifubbnvktwn.supabase.co';
+        const supabaseKey = 'sb_publishable_MOCc6fvCuOl0vQLenQ6-KQ_ZOOmMYre';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: false,
+                flowType: 'implicit',
+                storageKey: 'supabase.auth.token'
+            }
+        });
+        // Expose to window for iframes to find
+        window.supabase = _supabase;
+        const supabase_client = _supabase;
+
+        const fmt = n => Number(n || 0).toLocaleString();
+        const mkD = (ago = 0) => { const d = new Date(); d.setDate(d.getDate() - ago); return d.toISOString().slice(0, 10) };
+        const pg = {};
+        const PS = 15;
+        let cur = 'home', srch = '', dF = '', dT = '', curReport = '';
+
+        const META = {
+            'sale-detail': 'Sale Detail Report',
+            'sale-summary': 'Sale Summary Report',
+            'purchase-detail': 'Purchase Detail Report',
+            'purchase-summary': 'Purchase Summary Report',
+            'stock-report': 'Stock Report',
+            'low-stock': 'Low Stock Report',
+            'stock-history': 'Product Stock History Report',
+            'top-selling': 'Top Selling Item Report',
+            'supplier-report': 'Supplier Report',
+            'supplier-outstanding': 'Supplier Outstanding Report',
+            'customer-report': 'Customer Report',
+            'customer-outstanding': 'Customer Outstanding Report',
+            'profit-loss': 'Profit & Loss Report',
+            'promotion-report': 'Promotion Report',
+            'cash-book': 'Cash Book Report',
+            'log-report': 'Log Report'
+        };
+
+        async function fetchAll(query) {
+            let allData = [];
+            const pageSize = 1000;
+            let from = 0;
+            let hasMore = true;
+            while (hasMore) {
+                const { data, error } = await query.range(from, from + pageSize - 1);
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    hasMore = false;
+                } else {
+                    allData = allData.concat(data);
+                    if (data.length < pageSize) hasMore = false;
+                    else from += pageSize;
+                }
+            }
+            return allData;
+        }
+
+        async function updateDashboard() {
+            try {
+                const wh = document.getElementById('warehouse-filter')?.value;
+
+                // 1. Sales Data
+                let sQ = supabase_client.from('transactions').select('total_amount, created_at, payment_method');
+                if (dF) sQ = sQ.gte('created_at', dF + 'T00:00:00');
+                if (dT) sQ = sQ.lte('created_at', dT + 'T23:59:59');
+                if (wh) sQ = sQ.eq('warehouse_id', wh);
+                const sales = await fetchAll(sQ);
+
+                const totalRev = sales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
+                document.getElementById('kpi-rev').textContent = fmt(totalRev);
+
+                // 2. Purchases Data
+                let pQ = supabase_client.from('purchases').select('grand_total, date');
+                if (dF) pQ = pQ.gte('date', dF);
+                if (dT) pQ = pQ.lte('date', dT);
+                if (wh) pQ = pQ.eq('warehouse_id', wh);
+                const purchases = await fetchAll(pQ);
+
+                const totalPurch = purchases.reduce((sum, p) => sum + (p.grand_total || 0), 0);
+                document.getElementById('kpi-purch').textContent = fmt(totalPurch);
+
+                // Update Comparison Chart
+                buildBar(sales, purchases);
+
+                // Sales Donut
+                const methods = {};
+                sales.forEach(s => {
+                    const m = s.payment_method || 'Cash';
+                    methods[m] = (methods[m] || 0) + (s.total_amount || 0);
+                });
+                const colors = ['#6366f1', '#fbbf24', '#10b981', '#f43f5e', '#8b5cf6'];
+                const mSegs = Object.entries(methods).map(([n, v], i) => ({ n, v, c: colors[i % colors.length] }));
+                buildDonut('dSale', 'lSale', mSegs, totalRev || 1);
+                document.getElementById('donut-sale-count').textContent = sales.length;
+
+                // 3. Products/Stock
+                let prodQ;
+                if (wh) {
+                    prodQ = supabase_client.from('product_warehouses')
+                        .select('stock, products!inner(cost, price, category)')
+                        .eq('warehouse_id', wh);
+                } else {
+                    prodQ = supabase_client.from('products').select('stock, cost, price, category');
+                }
+                const rawProducts = await fetchAll(prodQ);
+                const products = rawProducts.map(p => ({
+                    stock: Number(p.stock || 0),
+                    cost: Number(wh ? (p.products?.cost || 0) : (p.cost || 0)),
+                    price: Number(wh ? (p.products?.price || 0) : (p.price || 0)),
+                    category: wh ? (p.products?.category || 'General') : (p.category || 'General')
+                }));
+
+                const productsInStock = products.filter(p => p.stock > 0);
+                const stockVal = products.reduce((sum, p) => sum + (p.stock * p.cost), 0);
+                const lowStockCount = products.filter(p => p.stock <= 20).length; 
+
+                document.getElementById('kpi-stock').textContent = fmt(stockVal);
+                document.getElementById('kpi-low').textContent = lowStockCount;
+                document.getElementById('kpi-low-sub').textContent = `${lowStockCount} items need reorder`;
+
+                // Stock Donut (by category) - only for products in stock
+                const cats = {};
+                productsInStock.forEach(p => {
+                    const c = p.category || 'General';
+                    cats[c] = (cats[c] || 0) + 1;
+                });
+                const cSegs = Object.entries(cats).slice(0, 5).map(([n, v], i) => ({ n, v, c: colors[i % colors.length] }));
+                buildDonut('dStock', 'lStock', cSegs, productsInStock.length || 1);
+                document.getElementById('donut-stock-count').textContent = productsInStock.length;
+
+                // 4. Customers & Suppliers
+                const { count: cCount } = await supabase_client.from('customers').select('*', { count: 'exact', head: true });
+                const { count: sCount } = await supabase_client.from('suppliers').select('*', { count: 'exact', head: true });
+                document.getElementById('kpi-cust').textContent = cCount || 0;
+                document.getElementById('kpi-sup').textContent = sCount || 0;
+
+            } catch (err) {
+                console.error('Dashboard Update Error:', err);
+            }
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data.type === 'stats-update') {
+                // Handle stats update from iframe if needed
+                console.log('Stats from iframe:', e.data.type, e.data.data.length);
+            }
+        });
+
+        async function openDetail(v) {
+            if (v === 'home') { goHome(); return; }
+            document.getElementById('page-home').classList.remove('active');
+            const frame = document.getElementById('reportFrame');
+            frame.style.display = 'flex';
+            frame.src = `reports/${v}.html?q=${encodeURIComponent(srch)}&df=${dF}&dt=${dT}`;
+            document.getElementById('topTitle').textContent = META[v] || 'Report';
+            document.getElementById('btnBack').classList.add('show');
+            cur = v;
+            curReport = v; // Track current report for export
+
+            // After loading, send the current session to the iframe to ensure it's authenticated
+            frame.onload = async () => {
+                const { data: { session } } = await _supabase.auth.getSession();
+                if (session && frame.contentWindow) {
+                    frame.contentWindow.postMessage({
+                        type: 'AUTH_SESSION',
+                        session: session
+                    }, '*');
+                }
+            };
+        }
+
+        function goHome() {
+            const frame = document.getElementById('reportFrame');
+            frame.style.display = 'none';
+            frame.src = 'about:blank';
+            document.getElementById('page-home').classList.add('active');
+            document.getElementById('topTitle').textContent = 'Dashboard';
+            document.getElementById('btnBack').classList.remove('show');
+            cur = 'home';
+        }
+
+        let st;
+        function onSearch() {
+            clearTimeout(st);
+            st = setTimeout(async () => {
+                srch = document.getElementById('si').value.trim();
+                if (cur !== 'home') {
+                    openDetail(cur); // Refresh iframe with new search
+                }
+            }, 300);
+        }
+
+        async function applyF() {
+            dF = document.getElementById('df').value;
+            dT = document.getElementById('dt').value;
+            if (cur === 'home') {
+                await updateDashboard();
+            } else {
+                openDetail(cur); // Refresh iframe with new filters
+            }
+        }
+
+        async function loadWarehouses() {
+            try {
+                const { data, error } = await window.supabase.from('warehouses').select('id, name').order('name');
+                if (error) throw error;
+                const filter = document.getElementById('warehouse-filter');
+                if (data) {
+                    data.forEach(w => {
+                        const opt = document.createElement('option');
+                        opt.value = w.id;
+                        opt.textContent = w.name;
+                        filter.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('Error loading warehouses:', e);
+            }
+        }
+        // charts
+        function buildBar(sales = [], purchases = []) {
+            const el = document.getElementById('barChart');
+            const yEl = document.getElementById('yAxis');
+            if (!el || !yEl) return;
+
+            // 1. Calculate Date Range
+            let start = new Date(dF);
+            let end = new Date(dT);
+            if (isNaN(start) || isNaN(end)) {
+                end = new Date();
+                start = new Date();
+                start.setDate(end.getDate() - 29);
+            }
+
+            const dayMap = {};
+            let temp = new Date(start);
+            const dataDays = [];
+            while (temp <= end) {
+                const ds = temp.toISOString().slice(0, 10);
+                dayMap[ds] = { s: 0, p: 0 };
+                dataDays.push(ds);
+                temp.setDate(temp.getDate() + 1);
+            }
+
+            sales.forEach(s => {
+                const ds = (s.created_at || '').slice(0, 10);
+                if (dayMap[ds]) dayMap[ds].s += (s.total_amount || 0);
+            });
+
+            purchases.forEach(p => {
+                const ds = (p.date || p.created_at || '').slice(0, 10);
+                if (dayMap[ds]) dayMap[ds].p += (p.grand_total || 0);
+            });
+
+            const rawMax = Math.max(...Object.values(dayMap).map(v => Math.max(v.s, v.p)), 1000);
+
+            // Round up max for clean Y-axis (1, 2, 5 multiples)
+            let mx = 1000;
+            const steps = 4;
+            const magnitudes = [1, 2, 5, 10];
+            let mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
+            for (let m of magnitudes) {
+                if (rawMax <= m * mag) {
+                    mx = m * mag;
+                    break;
+                }
+            }
+
+            // Render Y-Axis
+            let yHtml = '';
+            for (let i = steps; i >= 0; i--) {
+                const val = (mx / steps) * i;
+                yHtml += `<div>${fmtVal(val)}</div>`;
+            }
+            yEl.innerHTML = yHtml;
+
+            // Decimate labels if too many days
+            const showLabelEvery = dataDays.length > 20 ? 5 : (dataDays.length > 10 ? 2 : 1);
+
+            el.innerHTML = dataDays.map((date, idx) => {
+                const vals = dayMap[date];
+                const hS = Math.max(1, (vals.s / mx) * 100);
+                const hP = Math.max(1, (vals.p / mx) * 100);
+                const showLabel = idx % showLabelEvery === 0 || idx === dataDays.length - 1;
+                const label = showLabel ? `<div class="blbl">${((dt) => { const day = String(dt.getDate()).padStart(2, '0'); return day + '-' + dt.toLocaleString('en-US', { month: 'short' }); })(new Date(date))}</div>` : '';
+
+                return `
+                    <div class="bw" 
+                         onmouseenter="showTT(event, '${date}', ${vals.s}, ${vals.p})" 
+                         onmousemove="moveTT(event)"
+                         onmouseleave="hideTT()">
+                        <div class="bw-dual">
+                            <div class="bbar sale" style="height:${hS}%" title=""></div>
+                            <div class="bbar purchase" style="height:${hP}%" title=""></div>
+                        </div>
+                        ${label}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const tt = document.getElementById('chartTooltip');
+        function showTT(e, d, s, p) {
+            tt.innerHTML = `
+                <div class="ct-date">${((dt) => { const day = String(dt.getDate()).padStart(2, '0'); const mon = dt.toLocaleString('en-US', { month: 'short' }); return day + '-' + mon + '-' + dt.getFullYear(); })(new Date(d))}</div>
+                <div class="ct-row"><span>Sales:</span> <span class="ct-val ct-s">${fmt(s)} Ks</span></div>
+                <div class="ct-row"><span>Purchases:</span> <span class="ct-val ct-p">${fmt(p)} Ks</span></div>
+            `;
+            tt.style.opacity = 1;
+            moveTT(e);
+        }
+        function moveTT(e) {
+            const chart = document.getElementById('barChart');
+            const rect = chart.getBoundingClientRect();
+            let x = e.clientX - rect.left + 15;
+            let y = e.clientY - rect.top - 40;
+
+            // Boundary checks
+            if (x + 150 > rect.width) x -= 165;
+            tt.style.left = x + 'px';
+            tt.style.top = y + 'px';
+        }
+        function hideTT() { tt.style.opacity = 0; }
+
+        function fmtVal(v) {
+            if (v >= 1000000) return (v / 1000000).toFixed(1).replace('.0', '') + 'M';
+            if (v >= 1000) return (v / 1000).toFixed(0) + 'K';
+            return v;
+        }
+
+        function buildDonut(svgId, legId, segs, total) {
+            const svg = document.getElementById(svgId); if (!svg) return;
+            const cx = 52.5, cy = 52.5, r = 38, sw = 12, circ = 2 * Math.PI * r;
+            let off = 0, paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="${sw}"/>`;
+            segs.forEach(s => {
+                const dash = (s.v / total) * circ;
+                paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.c}" stroke-width="${sw}" stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${-off}" style="transform:rotate(-90deg);transform-origin:${cx}px ${cy}px"/>`;
+                off += dash;
+            });
+            svg.innerHTML = paths;
+            const lg = document.getElementById(legId); if (!lg) return;
+            lg.innerHTML = segs.map(s => `<div class="li"><div class="ld" style="background:${s.c}"></div><span class="ln">${s.n}</span><span class="lv">${s.v}</span><span class="lp">${Math.round(s.v / total * 100)}%</span></div>`).join('');
+        }
+
+        function exportCurrentReport() {
+            const iframe = document.getElementById('reportFrame');
+            if (!iframe || !iframe.contentWindow) {
+                alert('No report to export');
+                return;
+            }
+
+            // Use postMessage to avoid cross-origin SecurityError on file:// protocol
+            try {
+                iframe.contentWindow.postMessage({ type: 'EXPORT_REPORT', filename: curReport || 'report' }, '*');
+            } catch (e) {
+                console.error('Export error:', e);
+                alert('Export not available for this report');
+            }
+        }
+
+        (async function init() {
+            const now = new Date();
+            document.getElementById('df').value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+            document.getElementById('dt').value = now.toISOString().slice(0, 10);
+            dF = document.getElementById('df').value;
+            dT = document.getElementById('dt').value;
+
+            // Load warehouses and add listener for filtering
+            await loadWarehouses();
+            const wf = document.getElementById('warehouse-filter');
+            if (wf) {
+                wf.addEventListener('change', () => {
+                    applyF();
+                });
+            }
+
+            await updateDashboard();
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/datepicker-init.js"></script>
+</body>
+
+</html>

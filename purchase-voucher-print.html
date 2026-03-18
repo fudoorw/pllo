@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Purchase Voucher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Base page styles */
+        body {
+            background: #525659;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding-top: 60px;
+        }
+
+        page {
+            background: white;
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 0.5cm;
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            position: relative;
+            color: black;
+            overflow: hidden;
+        }
+
+        /* Paper sizes */
+        page[size="A4"] {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            font-size: 13px;
+        }
+
+        page[size="A5"] {
+            width: 148mm;
+            min-height: 210mm;
+            padding: 10mm;
+            font-size: 11px;
+        }
+
+        page[size="A3"] {
+            width: 297mm;
+            min-height: 420mm;
+            padding: 20mm;
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #374151;
+            padding: 6px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f1f5f9 !important;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .alternate-row {
+            background-color: #f8fafc !important;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body,
+            page {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                background: transparent;
+                min-height: auto;
+            }
+
+            @page {
+                margin: 0;
+            }
+
+            th {
+                background-color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .alternate-row {
+                background-color: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+    <!-- Supabase Integration -->
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+</head>
+
+<body class="is-a4">
+    <!-- Controls (Non-printing) -->
+    <div
+        class="no-print fixed top-0 left-0 right-0 bg-gray-800 text-white p-3 flex gap-4 items-center justify-center z-50 shadow-md">
+        <label class="font-bold text-sm">Paper Size:</label>
+        <select id="sizeSelector" onchange="changeSize(this.value)"
+            class="bg-gray-700 text-white px-3 py-1.5 rounded outline-none border border-gray-600 focus:border-blue-500">
+            <option value="A4">A4 (210 x 297mm)</option>
+            <option value="A5">A5 (148 x 210mm)</option>
+            <option value="A3">A3 (297 x 420mm)</option>
+        </select>
+        <button onclick="window.print()"
+            class="bg-indigo-600 hover:bg-indigo-700 px-6 py-1.5 rounded font-bold transition-colors">
+            <i class="fas fa-print mr-2"></i> Print
+        </button>
+        <button onclick="window.close()"
+            class="bg-gray-600 hover:bg-gray-500 px-4 py-1.5 rounded transition-colors ml-4 text-sm">
+            Close
+        </button>
+    </div>
+
+    <!-- Printable Area -->
+    <page size="A4" id="printPage">
+        <!-- Header -->
+        <div class="flex justify-between items-start mb-6">
+            <div class="w-1/3">
+                <img id="printLogo" src="" alt="Logo" class="max-h-16 object-contain hidden">
+                <div id="noLogoInfo" class="hidden font-bold text-xl text-indigo-700 uppercase tracking-tight">STORE
+                    LOGO</div>
+            </div>
+            <div class="w-1/3 text-center">
+                <h2 id="printStoreName" class="font-bold text-indigo-900 text-xl mb-1">PKSD-MAIN POS SYSTEM</h2>
+                <div id="printStoreAddress" class="text-[0.85em] text-gray-600">No address provided</div>
+                <div id="printStorePhone" class="text-[0.85em] text-gray-600"></div>
+                <div id="printStoreEmail" class="text-[0.85em] text-gray-600"></div>
+            </div>
+            <div class="w-1/3 text-right">
+                <h1 id="voucherTitle" class="text-3xl font-black text-indigo-900 uppercase">VOUCHER</h1>
+                <div class="text-indigo-600 font-bold mt-1 text-sm italic tracking-widest">PURCHASE RECEIPT</div>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="h-1 bg-indigo-600 mb-6"></div>
+
+        <!-- Meta Info -->
+        <div class="grid grid-cols-2 gap-8 mb-6 text-[0.95em]">
+            <div class="flex flex-col gap-2">
+                <div class="flex border-b border-gray-200 py-1">
+                    <span class="w-24 font-bold text-gray-700">Supplier:</span>
+                    <span id="printSupplierName" class="flex-1 font-semibold text-indigo-900"></span>
+                </div>
+                <div class="flex border-b border-gray-200 py-1">
+                    <span class="w-24 font-bold text-gray-700">Address:</span>
+                    <span id="printSupplierAddress" class="flex-1 text-gray-600"></span>
+                </div>
+                <div class="flex border-b border-gray-200 py-1">
+                    <span class="w-24 font-bold text-gray-700">Contact:</span>
+                    <span id="printSupplierPhone" class="flex-1 text-gray-600"></span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2">
+                <div class="flex border-b border-gray-200 py-1">
+                    <span class="w-32 font-bold text-gray-700 text-right pr-4">Date:</span>
+                    <span id="printDate" class="flex-1 text-indigo-900 font-semibold"></span>
+                </div>
+                <div class="flex border-b border-gray-200 py-1">
+                    <span class="w-32 font-bold text-gray-700 text-right pr-4">Voucher No:</span>
+                    <span id="printVoucherNo" class="flex-1 text-indigo-900 font-bold"></span>
+                </div>
+                <div class="flex border-b border-gray-200 py-1">
+                    <span class="w-32 font-bold text-gray-700 text-right pr-4">Status:</span>
+                    <span id="printStatus"
+                        class="flex-1 text-green-600 font-bold uppercase tracking-wider">RECEIVED</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <table class="w-full mb-8 shadow-sm">
+            <thead>
+                <tr>
+                    <th class="w-12">#</th>
+                    <th class="text-left px-3">Item Description</th>
+                    <th class="w-24">QTY</th>
+                    <th class="w-32 text-right pr-3">Unit Cost</th>
+                    <th class="w-32 text-right pr-3">Amount</th>
+                </tr>
+            </thead>
+            <tbody id="printItemsBody">
+                <!-- Data injected here -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="border-none"></td>
+                    <td class="font-bold py-2 text-right pr-3 bg-gray-50 uppercase text-[0.8em]">Subtotal</td>
+                    <td class="font-semibold py-2 text-right pr-3" id="printSubtotal">0</td>
+                </tr>
+                <tr id="taxRow">
+                    <td colspan="3" class="border-none"></td>
+                    <td class="font-bold py-2 text-right pr-3 bg-gray-50 uppercase text-[0.8em]">Order Tax</td>
+                    <td class="py-2 text-right pr-3" id="printTax">0</td>
+                </tr>
+                <tr id="shippingRow">
+                    <td colspan="3" class="border-none"></td>
+                    <td class="font-bold py-2 text-right pr-3 bg-gray-50 uppercase text-[0.8em]">Shipping</td>
+                    <td class="py-2 text-right pr-3" id="shippingValue">0</td>
+                </tr>
+                <tr id="discountRow">
+                    <td colspan="3" class="border-none"></td>
+                    <td class="font-bold py-2 text-right pr-3 bg-gray-50 uppercase text-[0.8em] text-red-600">Discount
+                    </td>
+                    <td class="py-2 text-right pr-3 text-red-600 font-semibold" id="printDiscount">0</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="border-none"></td>
+                    <td class="font-black py-4 text-right pr-3 bg-indigo-900 text-white uppercase tracking-wider">Grand
+                        Total</td>
+                    <td class="font-black py-4 text-right pr-3 bg-indigo-900 text-white text-xl" id="printTotal">0</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Summary & Footer Notes -->
+        <div class="grid grid-cols-2 gap-10 mt-10">
+            <div>
+                <div class="font-bold text-indigo-900 border-b-2 border-indigo-100 pb-1 mb-2">NOTES / REMARKS:</div>
+                <div id="printNotes"
+                    class="text-gray-600 italic whitespace-pre-wrap min-h-[100px] border border-dashed border-gray-300 p-3 rounded">
+                </div>
+            </div>
+            <div class="flex flex-col justify-between items-center text-center">
+                <div class="w-full">
+                    <div class="h-20 border-b border-gray-400"></div>
+                    <div class="mt-2 font-bold text-gray-700 uppercase tracking-widest text-xs">AUTHORIZED SIGNATURE
+                    </div>
+                </div>
+                <div class="w-full mt-10">
+                    <div class="h-20 border-b border-gray-400"></div>
+                    <div class="mt-2 font-bold text-gray-700 uppercase tracking-widest text-xs">RECEIVER'S SIGNATURE
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Greeting -->
+        <div
+            class="text-center mt-12 py-3 bg-indigo-50 border-y border-indigo-100 text-indigo-800 font-bold italic tracking-widest uppercase text-xs">
+            Software by PKSD-MAIN POS - Thank you for your business!
+        </div>
+    </page>
+
+    <script>
+        const db = window.supabase;
+
+        function changeSize(size) {
+            const page = document.getElementById('printPage');
+            page.setAttribute('size', size);
+            document.body.className = 'is-' + size.toLowerCase();
+            let style = document.getElementById('dynamicPageSize');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicPageSize';
+                document.head.appendChild(style);
+            }
+            style.innerHTML = `@media print { @page { size: ${size}; margin: 0; } }`;
+            ensureMinRows();
+        }
+
+        async function initPrint() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const purchaseId = urlParams.get('id');
+
+                if (!purchaseId) {
+                    alert("No Purchase ID provided.");
+                    window.close();
+                    return;
+                }
+
+                // Fetch Settings
+                const { data: settings } = await db.from('settings').select('*').limit(1).single();
+                if (settings) {
+                    document.getElementById('printStoreName').textContent = settings.store_name || 'PKSD-MAIN POS';
+                    const addr = [settings.city, settings.state, settings.country, settings.postal_code].filter(Boolean).join(', ');
+                    document.getElementById('printStoreAddress').textContent = addr || 'No address provided';
+                    document.getElementById('printStorePhone').textContent = settings.store_phone ? `Phone: ${settings.store_phone}` : '';
+                    document.getElementById('printStoreEmail').textContent = settings.default_email ? `Email: ${settings.default_email}` : '';
+
+                    if (settings.store_logo) {
+                        const img = document.getElementById('printLogo');
+                        img.src = settings.store_logo;
+                        img.classList.remove('hidden');
+                    } else {
+                        document.getElementById('noLogoInfo').classList.remove('hidden');
+                    }
+                }
+
+                // Fetch Purchase Data
+                const { data: purchase, error } = await db.from('purchases')
+                    .select('*, supplier:suppliers(*), items:purchase_items(*)')
+                    .eq('id', purchaseId)
+                    .single();
+
+                if (error) throw error;
+
+                document.getElementById('printSupplierName').textContent = purchase.supplier?.name || '-';
+                document.getElementById('printSupplierAddress').textContent = [
+                    purchase.supplier?.address,
+                    purchase.supplier?.city
+                ].filter(Boolean).join(', ') || '-';
+                document.getElementById('printSupplierPhone').textContent = purchase.supplier?.phone || '-';
+
+                const dt = new Date(purchase.date);
+                document.getElementById('printDate').textContent = dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                document.getElementById('printVoucherNo').textContent = purchase.reference_no;
+                document.getElementById('printStatus').textContent = purchase.status || 'RECEIVED';
+                document.getElementById('printNotes').textContent = purchase.note || 'No notes.';
+
+                // Financials
+                const subtotal = (purchase.items || []).reduce((acc, i) => acc + (parseFloat(i.subtotal) || 0), 0);
+                document.getElementById('printSubtotal').textContent = subtotal.toLocaleString();
+                document.getElementById('printTax').textContent = (purchase.order_tax_amount || 0).toLocaleString();
+                document.getElementById('shippingValue').textContent = (purchase.shipping_amount || 0).toLocaleString();
+                document.getElementById('printDiscount').textContent = (purchase.discount_amount || 0).toLocaleString();
+                document.getElementById('printTotal').textContent = (purchase.grand_total || 0).toLocaleString();
+
+                // Items
+                await renderItems(purchase.items || []);
+
+            } catch (err) {
+                console.error("Failed to load purchase for printing:", err);
+                alert("Error loading purchase. See console for details.");
+            }
+        }
+
+        async function renderItems(items) {
+            const tbody = document.getElementById('printItemsBody');
+            tbody.innerHTML = '';
+
+            const productIds = items.map(i => i.product_id).filter(id => id);
+            let productsMap = {};
+            if (productIds.length > 0) {
+                const { data: prods } = await db.from('products').select('id, name, unit:units(name)').in('id', productIds);
+                if (prods) {
+                    prods.forEach(p => productsMap[p.id] = p);
+                }
+            }
+
+            window.currentItemsRows = [];
+
+            items.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                if (idx % 2 === 1) tr.className = 'alternate-row';
+
+                const productName = productsMap[item.product_id]?.name || 'Unknown Product';
+                const unitName = item.unit || productsMap[item.product_id]?.unit?.name || '';
+                const qty = item.quantity || 0;
+                const cost = item.unit_cost || 0;
+                const sub = item.subtotal || (qty * cost);
+
+                tr.innerHTML = `
+                    <td class="text-gray-500 text-xs">${idx + 1}</td>
+                    <td class="text-left px-3 font-semibold text-gray-800">${productName}</td>
+                    <td class="font-medium">${qty} <span class="text-[0.8em] text-gray-500">${unitName}</span></td>
+                    <td class="text-right pr-3">${cost.toLocaleString()}</td>
+                    <td class="text-right pr-3 font-bold text-indigo-900">${sub.toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+                window.currentItemsRows.push(tr);
+            });
+
+            ensureMinRows();
+        }
+
+        function ensureMinRows() {
+            const tbody = document.getElementById('printItemsBody');
+            const currentItemCount = window.currentItemsRows ? window.currentItemsRows.length : 0;
+            Array.from(tbody.querySelectorAll('.blank-row')).forEach(r => r.remove());
+
+            const size = document.getElementById('sizeSelector').value;
+            const minRows = size === 'A5' ? 8 : 15;
+            const rowsToAdd = Math.max(0, minRows - currentItemCount);
+
+            for (let i = 0; i < rowsToAdd; i++) {
+                const isAlternate = (currentItemCount + i) % 2 === 1;
+                const tr = document.createElement('tr');
+                tr.className = (isAlternate ? 'alternate-row ' : '') + 'blank-row';
+                tr.style.height = '32px';
+                tr.innerHTML = `<td></td><td></td><td></td><td></td><td></td>`;
+                tbody.appendChild(tr);
+            }
+        }
+
+        window.onload = initPrint;
+    </script>
+</body>
+
+</html>

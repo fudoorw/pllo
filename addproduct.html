@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Product Manager - POS System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Shared Styles (Assumed external, keeping variables) -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <style>
+        /* Inherits from css/styles.css */
+
+        /* ── Page Layout ── */
+        body {
+            background: var(--bg-primary);
+            height: 100vh;
+            padding: 12px;
+            margin: 0;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+        }
+
+        /* ── Toolbar ── */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: var(--shadow-lg);
+            flex-shrink: 0;
+        }
+
+        .toolbar-left h1 {
+            font-size: 1.25rem;
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            margin-left: 12px;
+        }
+
+        .sync-badge i {
+            font-size: 0.5rem;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ── Buttons Refinement ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* ── Editor Section ── */
+        .editor-section {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            flex-shrink: 0;
+            zoom: 1.05;
+            /* Zoom in slightly per user request */
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: rgba(15, 23, 42, 0.2);
+        }
+
+        .field-cell {
+            padding: 8px 14px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+        }
+
+        .field-cell:hover {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .field-cell.col-span-2 {
+            grid-column: span 2;
+        }
+
+        .field-cell.no-bg {
+            background: none;
+            border-bottom: none;
+        }
+
+        .field-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.075em;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .field-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            padding: 0 10px;
+            outline: none;
+            transition: all 0.2s;
+            height: 30px;
+            box-sizing: border-box;
+        }
+
+        .field-input:focus {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .field-input[readonly] {
+            opacity: 0.6;
+            background: transparent;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            cursor: default;
+        }
+
+        /* ── Barcode Tags Refinement ── */
+        .barcode-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .barcode-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: #c7d2fe;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .barcode-tag .remove-tag {
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: rgba(199, 210, 254, 0.6);
+        }
+
+        .barcode-tag .remove-tag:hover {
+            color: #f87171;
+        }
+
+        /* ── Data Grid ── */
+        .grid-section {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .table-container {
+            overflow: auto;
+            flex: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #1e293b;
+            /* Fallback */
+            backdrop-filter: blur(10px);
+        }
+
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        td {
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+
+        tbody tr {
+            cursor: pointer;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody tr:hover td {
+            color: white;
+        }
+
+        tbody tr.selected {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        tbody tr.selected td {
+            color: #a5b4fc;
+            font-weight: 500;
+        }
+
+        /* ── Loading/Toast ── */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 12px 18px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-success {
+            background: #059669;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toast-error {
+            background: #dc2626;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-dropdown-menu {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            max-height: 250px;
+            overflow-y: auto;
+            min-width: 200px;
+        }
+
+        .form-dropdown-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.15s;
+        }
+
+        .form-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .form-dropdown-item:hover,
+        .form-dropdown-item.highlighted {
+            background: rgba(79, 70, 229, 0.2);
+        }
+
+        .form-dropdown-item.selected {
+            background: rgba(79, 70, 229, 0.3);
+        }
+
+        .field-input-wrapper {
+            position: relative;
+        }
+
+        .field-input-wrapper .field-input {
+            width: 100%;
+        }
+
+        .field-input-wrapper .dropdown-arrow {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Dropdown Menu -->
+    <div id="formDdMenu" class="form-dropdown-menu hidden"></div>
+
+    <div class="page-container">
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left" style="display:flex; align-items:center; gap:12px; flex:1;">
+                <div class="search-container" style="position:relative; flex:1; max-width:400px;">
+                    <i class="fas fa-search"
+                        style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.85rem;"></i>
+                    <input type="text" id="searchInput" class="field-input" placeholder="Search products..."
+                        style="padding-left:36px;" oninput="filterProducts()">
+                </div>
+                <span class="sync-badge" id="syncBadge"><i class="fas fa-circle"></i> Synced to Supabase</span>
+            </div>
+            <div class="toolbar-actions">
+                <button class="btn btn-secondary" onclick="clearEditor()">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+                <button class="btn btn-danger hidden" id="btn-delete" onclick="deleteCurrentProduct()">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button class="btn btn-success" onclick="saveProduct()">
+                    <i class="fas fa-save"></i> Save Product
+                </button>
+                <button class="btn btn-secondary" onclick="refreshProducts()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor Section -->
+        <div class="editor-section">
+            <div class="form-grid">
+                <!-- Line 1: Identity -->
+                <div class="field-cell">
+                    <label class="field-label">Item Code</label>
+                    <input type="text" id="edit-code" class="field-input" placeholder="Enter code...">
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Barcode ++</label>
+                    <div class="barcode-input-container">
+                        <input type="text" id="edit-barcode-input" class="field-input" placeholder="Scan barcode...">
+                        <div id="edit-barcode-tags" class="barcode-tags"></div>
+                    </div>
+                </div>
+                <div class="field-cell col-span-2">
+                    <label class="field-label">Description</label>
+                    <input type="text" id="edit-name" class="field-input" placeholder="Product Name">
+                </div>
+
+                <!-- Line 2: Classification + Stock -->
+                <div class="field-cell">
+                    <label class="field-label">Category</label>
+                    <div class="field-input-wrapper">
+                        <input type="text" id="edit-category" class="field-input" data-dropdown="categories"
+                            placeholder="Select Category">
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </div>
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Sub-Category</label>
+                    <div class="field-input-wrapper">
+                        <input type="text" id="edit-subcategory" class="field-input" data-dropdown="subcategories"
+                            data-parent="edit-category" placeholder="Select Sub-Category">
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </div>
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Brand</label>
+                    <div class="field-input-wrapper">
+                        <input type="text" id="edit-brand" class="field-input" data-dropdown="brands"
+                            placeholder="Select Brand">
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </div>
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Stock</label>
+                    <input type="number" id="edit-stock" class="field-input" value="0">
+                </div>
+
+                <!-- Line 3: Pricing & Math -->
+                <div class="field-cell">
+                    <label class="field-label">Cost</label>
+                    <input type="number" id="edit-cost" class="field-input" step="0.01" value="0">
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Unit Price</label>
+                    <input type="number" id="edit-price" class="field-input" step="0.01" value="0">
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Box Price</label>
+                    <input type="number" id="edit-box-price" class="field-input" step="0.01" value="0"
+                        style="background:rgba(99,102,241,0.08);">
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Margin %</label>
+                    <input type="text" id="edit-margin" class="field-input" readonly value="0.00%">
+                </div>
+
+                <!-- Line 4: Units & Conversion -->
+                <div class="field-cell">
+                    <label class="field-label">Sale Unit</label>
+                    <div class="field-input-wrapper">
+                        <input type="text" id="edit-unit" class="field-input" data-dropdown="units"
+                            placeholder="Select Unit">
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </div>
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Purchase Unit</label>
+                    <div class="field-input-wrapper">
+                        <input type="text" id="edit-purchase-unit" class="field-input" data-dropdown="units"
+                            data-short="true" placeholder="Select Purchase Unit">
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </div>
+                </div>
+                <div class="field-cell">
+                    <label class="field-label">Conversion (Pcs/Unit)</label>
+                    <input type="number" id="edit-conversion" class="field-input" value="1">
+                </div>
+                <div class="field-cell" style="border-right:none">
+                    <label class="field-label">Remark</label>
+                    <input type="text" id="edit-remark" class="field-input" placeholder="Notes...">
+                </div>
+
+                <!-- Line 5: Logistics -->
+                <div class="field-cell col-span-2">
+                    <label class="field-label">Suppliers ++</label>
+                    <div class="barcode-input-container">
+                        <input type="text" id="edit-supplier-input" class="field-input" data-dropdown="suppliers"
+                            placeholder="Select Supplier...">
+                        <div id="edit-supplier-tags" class="barcode-tags"></div>
+                    </div>
+                </div>
+                <div class="field-cell col-span-2" style="border-right:none">
+                    <label class="field-label">Shops/Warehouses ++</label>
+                    <div class="barcode-input-container">
+                        <input type="text" id="edit-shop-input" class="field-input" data-dropdown="shops"
+                            placeholder="Select Shop/Warehouse...">
+                        <div id="edit-shop-tags" class="barcode-tags"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid Section (Table) -->
+        <div class="grid-section">
+            <div class="table-container">
+                <table id="productsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Item Code</th>
+                            <th>Barcode</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Brand</th>
+                            <th>Cost</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rows rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Init Scripts (Backend Logic Kept Intact) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        if (!window.supabase) document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
+        if (new URLSearchParams(window.location.search).get('mode') === 'embedded') {
+            document.body.classList.add('embedded');
+        }
+    </script>
+    <script src="config.js"></script>
+    <script src="js/supabase-client.js"></script>
+
+    <script>
+        // ── State ──
+        let productsData = [];
+        let currentProductId = null;
+        let currentBarcodes = [];
+        let currentSuppliers = [];
+        let currentShops = [];
+        let refCategories = [], refSubcategories = [], refBrands = [], refUnits = [], refSuppliers = [], refShops = [];
+
+        // ── UI Helpers ──
+        const EL = (id) => {
+            const el = document.getElementById(id);
+            if (!el) {
+                // console.warn(`Element not found: ${id}`);
+            }
+            return el;
+        };
+        const showLoading = () => EL('loadingOverlay').classList.remove('hidden');
+        const hideLoading = () => EL('loadingOverlay').classList.add('hidden');
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        const showToast = (msg, type = 'success') => {
+            const container = EL('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // ── Data Loading Logic ──
+        async function init() {
+            showLoading();
+            try {
+                await loadReferences();
+                await loadProducts();
+                renderDropdowns();
+                clearEditor();
+            } catch (e) {
+                console.error(e);
+                showToast(e.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadReferences() {
+            const [c, s, b, u, sup, sh] = await Promise.all([
+                supabase.from('categories').select('*').order('name'),
+                supabase.from('subcategories').select('*').order('name'),
+                supabase.from('brands').select('*').order('name'),
+                supabase.from('units').select('*').order('name'),
+                supabase.from('suppliers').select('*').order('name'),
+                supabase.from('warehouses').select('*').order('name')
+            ]);
+            refCategories = c.data || [];
+            refSubcategories = s.data || [];
+            refBrands = b.data || [];
+            refUnits = u.data || [];
+            refSuppliers = sup.data || [];
+            refShops = sh.data || [];
+        }
+
+        async function loadProducts() {
+            const { data, error } = await supabase
+                .from('products')
+                .select(`
+                    *,
+                    product_barcodes(barcode),
+                    product_suppliers(supplier_id),
+                    product_warehouses(warehouse_id, stock)
+                `)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            productsData = data || [];
+            filterProducts();
+        }
+
+        async function refreshProducts() {
+            showLoading();
+            await loadProducts();
+            hideLoading();
+            showToast('Refreshed');
+        }
+
+        // ── Rendering Logic ──
+        function renderDropdowns() {
+            // Store reference data for dropdowns
+            window._ddData = {
+                categories: refCategories.map(c => ({ id: c.id, name: c.name })),
+                subcategories: refSubcategories.map(s => ({ id: s.id, name: s.name, parent_id: s.category_id })),
+                brands: refBrands.map(b => ({ id: b.id, name: b.name })),
+                units: refUnits.map(u => ({ id: u.id, name: u.short_name, short_name: u.short_name })),
+                suppliers: refSuppliers.map(s => ({ id: s.id, name: s.name })),
+                shops: refShops.map(s => ({ id: s.id, name: s.name }))
+            };
+        }
+
+        function renderGrid(filteredData = null) {
+            const tbody = EL('tableBody');
+            tbody.innerHTML = '';
+            const data = filteredData || productsData;
+            data.forEach((p, idx) => {
+                const tr = document.createElement('tr');
+                tr.dataset.id = p.id;
+                if (currentProductId === p.id) tr.classList.add('selected');
+                tr.onclick = () => selectProduct(p.id);
+
+                const catName = refCategories.find(c => c.id === p.category_id)?.name || '';
+                const brandName = refBrands.find(b => b.id === p.brand_id)?.name || '';
+                const unitName = refUnits.find(u => u.id === p.unit_id)?.short_name || '';
+                const formatNum = (n) => n ? parseFloat(n).toFixed(2) : '0.00';
+
+                tr.innerHTML = `
+                    <td>${idx + 1}</td>
+                    <td><code style="color:var(--primary)">${escapeHtml(p.code)}</code></td>
+                    <td><small>${(p.barcodes || []).join(', ')}</small></td>
+                    <td><b style="color:var(--text-primary)">${escapeHtml(p.name)}</b></td>
+                    <td>${escapeHtml(catName)}</td>
+                    <td>${escapeHtml(brandName)}</td>
+                    <td style="font-family:monospace">${formatNum(p.cost)}</td>
+                    <td style="font-family:monospace; color:var(--primary)">${formatNum(p.price)}</td>
+                    <td><span style="font-weight:600">${p.stock}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterProducts() {
+            const search = EL('searchInput').value.toLowerCase().trim();
+            if (!search) {
+                renderGrid();
+                return;
+            }
+            const filtered = productsData.filter(p => {
+                const catName = refCategories.find(c => c.id === p.category_id)?.name || '';
+                const brandName = refBrands.find(b => b.id === p.brand_id)?.name || '';
+                return (p.name || '').toLowerCase().includes(search) ||
+                    (p.code || '').toLowerCase().includes(search) ||
+                    (p.barcodes || []).some(b => b.toLowerCase().includes(search)) ||
+                    catName.toLowerCase().includes(search) ||
+                    brandName.toLowerCase().includes(search);
+            });
+            renderGrid(filtered);
+        }
+
+        function renderBarcodeTags() {
+            const container = EL('edit-barcode-tags');
+            if (container) {
+                container.innerHTML = currentBarcodes.map(b =>
+                    `<span class="barcode-tag">${escapeHtml(b)} <i class="fas fa-times remove-tag" onclick="removeBarcode('${escapeHtml(b)}')"></i></span>`
+                ).join('');
+            }
+        }
+
+        function renderSupplierTags() {
+            const container = EL('edit-supplier-tags');
+            if (container) {
+                container.innerHTML = currentSuppliers.map(sid => {
+                    const s = refSuppliers.find(x => x.id === sid);
+                    const name = s ? s.name : sid;
+                    return `<span class="barcode-tag" style="background:rgba(16,185,129,0.1); color:#10b981">${escapeHtml(name)} <i class="fas fa-times remove-tag" onclick="removeSupplier('${escapeHtml(sid)}')"></i></span>`;
+                }).join('');
+            }
+        }
+
+        function renderShopTags() {
+            const container = EL('edit-shop-tags');
+            if (container) {
+                container.innerHTML = currentShops.map(sid => {
+                    const s = refShops.find(x => x.id === sid);
+                    const name = s ? s.name : sid;
+                    return `<span class="barcode-tag" style="background:rgba(99,102,241,0.1); color:#818cf8">${escapeHtml(name)} <i class="fas fa-times remove-tag" onclick="removeShop('${escapeHtml(sid)}')"></i></span>`;
+                }).join('');
+            }
+        }
+
+        // ── Logic ──
+        function selectProduct(id) {
+            currentProductId = id;
+            const p = productsData.find(x => x.id === id);
+            if (!p) return;
+
+            // Use pre-fetched data
+            currentBarcodes = p.product_barcodes ? p.product_barcodes.map(b => b.barcode) : [];
+            currentSuppliers = p.product_suppliers ? p.product_suppliers.map(s => s.supplier_id) : [];
+            currentShops = p.product_warehouses ? p.product_warehouses.map(w => w.warehouse_id) : [];
+
+            // Fallback to old storage if junction tables are empty (backward compatibility)
+            if (currentBarcodes.length === 0 && p.barcodes && p.barcodes.length > 0) currentBarcodes = [...p.barcodes];
+            if (currentSuppliers.length === 0 && p.supplier) currentSuppliers = p.supplier.split(',').map(s => s.trim()).filter(s => s);
+            if (currentShops.length === 0 && p.shop) currentShops = p.shop.split(',').map(s => s.trim()).filter(s => s);
+
+            const getCatName = (cid) => refCategories.find(c => c.id === cid)?.name || '';
+            const getBrandName = (bid) => refBrands.find(b => b.id === bid)?.name || '';
+            const getUnitName = (uid, fallback) => {
+                const u = refUnits.find(u => u.id === uid);
+                if (u) return u.short_name;
+                return fallback || uid || '';
+            };
+            const getSubName = (sid) => refSubcategories.find(s => s.id === sid)?.name || '';
+
+            EL('edit-code').value = p.code || '';
+            EL('edit-name').value = p.name || '';
+            EL('edit-category').value = getCatName(p.category_id);
+            EL('edit-category').dataset.value = p.category_id || '';
+            updateSubcategories(p.category_id);
+            EL('edit-subcategory').value = getSubName(p.subcategory_id);
+            EL('edit-subcategory').dataset.value = p.subcategory_id || '';
+            EL('edit-brand').value = getBrandName(p.brand_id);
+            EL('edit-brand').dataset.value = p.brand_id || '';
+            EL('edit-cost').value = p.cost || 0;
+            EL('edit-unit').value = getUnitName(p.unit_id, p.sale_unit || p.unit);
+            EL('edit-unit').dataset.value = p.unit_id || '';
+            const purchaseUnitObj = refUnits.find(u => u.id === p.purchase_unit || u.name === p.purchase_unit || u.short_name === p.purchase_unit);
+            const purchaseUnit = purchaseUnitObj ? purchaseUnitObj.short_name : (p.purchase_unit || 'Box');
+            EL('edit-purchase-unit').value = purchaseUnit;
+            EL('edit-purchase-unit').dataset.value = (purchaseUnitObj ? purchaseUnitObj.id : p.purchase_unit) || 'Box';
+            EL('edit-conversion').value = p.pcs_per_box || 1;
+            EL('edit-price').value = p.price || 0;
+            const conv = parseFloat(p.pcs_per_box) || 1;
+            EL('edit-box-price').value = p.box_price || (p.price * conv).toFixed(2) || 0;
+            EL('edit-stock').value = p.stock || 0;
+            EL('edit-remark').value = p.remark || '';
+
+            renderBarcodeTags();
+            renderSupplierTags();
+            renderShopTags();
+            calcMargin();
+
+            EL('btn-delete').classList.remove('hidden');
+            filterProducts();
+        }
+
+        function clearEditor() {
+            currentProductId = null;
+            currentBarcodes = [];
+            currentSuppliers = [];
+            currentShops = [];
+            const inputs = document.querySelectorAll('.editor-section input, .editor-section select');
+            inputs.forEach(i => {
+                if (i.type === 'number') i.value = 0;
+                else i.value = '';
+                // Clear dropdown data-value
+                if (i.dataset.dropdown) {
+                    i.dataset.value = '';
+                }
+            });
+            EL('edit-purchase-unit').value = '';
+            EL('edit-purchase-unit').dataset.value = '';
+            EL('edit-conversion').value = 1;
+            EL('edit-margin').value = '0.00%';
+            EL('edit-box-price').value = 0;
+            renderBarcodeTags();
+            renderSupplierTags();
+            renderShopTags();
+            EL('btn-delete').classList.add('hidden');
+            filterProducts();
+        }
+
+        function updateSubcategories(catId) {
+            // With custom dropdown, subcategories are filtered automatically when dropdown opens
+            // This function is kept for compatibility but doesn't need to do anything
+        }
+
+        function calcMargin() {
+            const cost = parseFloat(EL('edit-cost').value) || 0;
+            const price = parseFloat(EL('edit-price').value) || 0;
+            EL('edit-margin').value = (cost > 0 && price > 0) ? (((price - cost) / cost) * 100).toFixed(2) + '%' : '0.00%';
+        }
+
+        function updateBoxPrice() {
+            const unitPrice = parseFloat(EL('edit-price').value) || 0;
+            const conv = parseFloat(EL('edit-conversion').value) || 1;
+            EL('edit-box-price').value = (unitPrice * conv).toFixed(2);
+        }
+
+        function addBarcode(val) {
+            if (val && !currentBarcodes.includes(val)) {
+                currentBarcodes.push(val);
+                renderBarcodeTags();
+            }
+            EL('edit-barcode-input').value = '';
+        }
+
+        window.removeBarcode = function (val) {
+            currentBarcodes = currentBarcodes.filter(b => b !== val);
+            renderBarcodeTags();
+        }
+
+        function addSupplier(val, name) {
+            const s = refSuppliers.find(x => x.id === val || x.name === val);
+            const id = s ? s.id : val;
+            if (id && !currentSuppliers.includes(id)) {
+                currentSuppliers.push(id);
+                renderSupplierTags();
+            }
+            const inp = EL('edit-supplier-input');
+            if (inp) inp.value = '';
+        }
+
+        window.removeSupplier = function (id) {
+            currentSuppliers = currentSuppliers.filter(x => x !== id);
+            renderSupplierTags();
+        }
+
+        function addShop(val, name) {
+            const s = refShops.find(x => x.id === val || x.name === val);
+            const id = s ? s.id : val;
+            if (id && !currentShops.includes(id)) {
+                currentShops.push(id);
+                renderShopTags();
+            }
+            const inp = EL('edit-shop-input');
+            if (inp) inp.value = '';
+        }
+
+        window.removeShop = function (id) {
+            currentShops = currentShops.filter(x => x !== id);
+            renderShopTags();
+        }
+
+        // (duplicate removed — addSupplier/addShop/removeSupplier/removeShop defined above)
+
+        async function saveProduct() {
+            const name = EL('edit-name').value.trim();
+            if (!name) return showToast('Product name is required', 'error');
+
+            const getDropdownValue = (id) => {
+                const el = EL(id);
+                return el.dataset.value || '';
+            };
+
+            const payload = {
+                code: EL('edit-code').value.trim(),
+                name: name,
+                barcodes: currentBarcodes, // Keep for legacy
+                category_id: getDropdownValue('edit-category') || null,
+                subcategory_id: getDropdownValue('edit-subcategory') || null,
+                brand_id: getDropdownValue('edit-brand') || null,
+                cost: parseFloat(EL('edit-cost').value) || 0,
+                price: parseFloat(EL('edit-price').value) || 0,
+                box_price: parseFloat(EL('edit-box-price').value) || 0,
+                unit_id: getDropdownValue('edit-unit') || null,
+                purchase_unit: getDropdownValue('edit-purchase-unit') || 'Box',
+                pcs_per_box: parseInt(EL('edit-conversion').value) || 1,
+                supplier: currentSuppliers.join(','), // Keep for legacy
+                shop: currentShops.join(','), // Keep for legacy
+                remark: EL('edit-remark').value,
+                stock: parseInt(EL('edit-stock').value) || 0,
+            };
+
+            showLoading();
+            try {
+                let pid = currentProductId;
+                if (pid) {
+                    const { error } = await supabase.from('products').update(payload).eq('id', pid);
+                    if (error) throw error;
+                    showToast('Product updated');
+                } else {
+                    const { data, error } = await supabase.from('products').insert([payload]).select();
+                    if (error) throw error;
+                    pid = data[0].id;
+                    showToast('Product created');
+                    clearEditor();
+                }
+
+                // Sync Junction Tables
+                if (pid) {
+                    // 1. Barcodes
+                    await supabase.from('product_barcodes').delete().eq('product_id', pid);
+                    if (currentBarcodes.length > 0) {
+                        await supabase.from('product_barcodes').insert(currentBarcodes.map(b => ({ product_id: pid, barcode: b })));
+                    }
+
+                    // 2. Suppliers
+                    await supabase.from('product_suppliers').delete().eq('product_id', pid);
+                    if (currentSuppliers.length > 0) {
+                        await supabase.from('product_suppliers').insert(currentSuppliers.map(sid => ({ product_id: pid, supplier_id: sid })));
+                    }
+
+                    // 3. Warehouses
+                    await supabase.from('product_warehouses').delete().eq('product_id', pid);
+                    if (currentShops.length > 0) {
+                        await supabase.from('product_warehouses').insert(currentShops.map(wid => ({ product_id: pid, warehouse_id: wid, stock: payload.stock })));
+                    }
+                }
+
+                await loadProducts();
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteCurrentProduct() {
+            if (!currentProductId || !confirm('Delete this product permanently?')) return;
+            showLoading();
+            try {
+                const { error } = await supabase.from('products').delete().eq('id', currentProductId);
+                if (error) throw error;
+                showToast('Product deleted');
+                clearEditor();
+                await loadProducts();
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Listeners
+        EL('edit-cost').addEventListener('input', calcMargin);
+        EL('edit-price').addEventListener('input', function () {
+            calcMargin();
+            updateBoxPrice();
+        });
+        EL('edit-conversion').addEventListener('input', updateBoxPrice);
+        EL('edit-category').addEventListener('change', (e) => {
+            const catId = e.target.dataset.value;
+            updateSubcategories(catId);
+        });
+
+        const handleTagInput = (e, callback) => {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                const val = e.target.value.trim();
+                if (val) {
+                    e.preventDefault();
+                    callback(val);
+                }
+            }
+        };
+
+        EL('edit-barcode-input').addEventListener('keydown', (e) => handleTagInput(e, addBarcode));
+        // ── Custom Dropdown System ──
+        let ddOpen = false;
+        let ddCurrentField = null;
+        let ddOptions = [];
+        let ddSelectedIndex = -1;
+        let ddParentValue = null;
+
+        const ddMenu = document.getElementById('formDdMenu');
+
+        function getDropdownData(inputEl) {
+            const type = inputEl.dataset.dropdown;
+            if (!type || !window._ddData) return [];
+
+            let data = window._ddData[type] || [];
+
+            // Filter by parent if needed
+            const parentField = inputEl.dataset.parent;
+            if (parentField) {
+                const parentEl = document.getElementById(parentField);
+                const parentVal = parentEl?.dataset?.value;
+                if (type === 'subcategories' && parentVal) {
+                    data = data.filter(item => item.parent_id === parseInt(parentVal) || item.parent_id === parentVal);
+                }
+            }
+
+            return data;
+        }
+
+        function showDd(inputEl, isFiltering = false) {
+            ddCurrentField = inputEl.id;
+            ddOptions = getDropdownData(inputEl);
+
+            if (ddOptions.length === 0) {
+                hideDd();
+                return;
+            }
+
+            const rect = inputEl.getBoundingClientRect();
+            ddMenu.style.top = (rect.bottom + 4) + 'px';
+            ddMenu.style.left = rect.left + 'px';
+            ddMenu.style.width = rect.width + 'px';
+
+            const searchVal = inputEl.value.toLowerCase();
+            const filtered = isFiltering
+                ? ddOptions.filter(o => !searchVal || o.name.toLowerCase().includes(searchVal))
+                : ddOptions;
+
+            ddMenu.innerHTML = filtered.map((opt, idx) =>
+                `<div class="form-dropdown-item" data-id="${opt.id}" data-name="${escapeHtml(opt.name)}" data-idx="${idx}">${escapeHtml(opt.name)}</div>`
+            ).join('');
+
+            ddMenu.classList.remove('hidden');
+            ddOpen = true;
+            ddSelectedIndex = -1;
+        }
+
+        function hideDd() {
+            ddMenu.classList.add('hidden');
+            ddOpen = false;
+            ddCurrentField = null;
+            ddOptions = [];
+            ddSelectedIndex = -1;
+        }
+
+        function highlightDdItem(idx) {
+            const items = ddMenu.querySelectorAll('.form-dropdown-item');
+            items.forEach((item, i) => {
+                item.classList.toggle('highlighted', i === idx);
+            });
+            ddSelectedIndex = idx;
+            if (items[idx]) {
+                items[idx].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function selectDdItem(idx) {
+            const items = ddMenu.querySelectorAll('.form-dropdown-item');
+            if (items[idx]) {
+                const item = items[idx];
+                const inputEl = document.getElementById(ddCurrentField);
+
+                // Multi-select fields: add as tag instead of setting value
+                if (ddCurrentField === 'edit-supplier-input') {
+                    addSupplier(item.dataset.id);
+                    hideDd();
+                    inputEl.value = '';
+                    inputEl.focus();
+                    return;
+                }
+                if (ddCurrentField === 'edit-shop-input') {
+                    addShop(item.dataset.id);
+                    hideDd();
+                    inputEl.value = '';
+                    inputEl.focus();
+                    return;
+                }
+
+                // Single-select fields: set value normally
+                inputEl.value = item.dataset.name;
+                inputEl.dataset.value = item.dataset.id;
+
+                // If subcategory, update based on new category
+                if (ddCurrentField === 'edit-category') {
+                    updateSubcategories(item.dataset.id);
+                    const subEl = document.getElementById('edit-subcategory');
+                    subEl.value = '';
+                    subEl.dataset.value = '';
+                }
+
+                hideDd();
+                // Move to next field
+                const fieldIdx = formFields.indexOf(ddCurrentField);
+                if (fieldIdx < formFields.length - 1) {
+                    document.getElementById(formFields[fieldIdx + 1])?.focus();
+                }
+            }
+        }
+
+        // Add focus/click handlers for dropdown inputs
+        const dropdownFields = ['edit-category', 'edit-subcategory', 'edit-brand', 'edit-unit', 'edit-purchase-unit', 'edit-supplier-input', 'edit-shop-input'];
+
+        dropdownFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('focus', () => showDd(el, false));
+                el.addEventListener('click', () => showDd(el, false));
+                el.addEventListener('input', () => showDd(el, true));
+                el.addEventListener('keydown', (e) => {
+                    if (ddOpen) {
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const newIdx = Math.min(ddSelectedIndex + 1, ddMenu.children.length - 1);
+                            highlightDdItem(newIdx);
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            const newIdx = Math.max(ddSelectedIndex - 1, 0);
+                            highlightDdItem(newIdx);
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (ddSelectedIndex >= 0) {
+                                selectDdItem(ddSelectedIndex);
+                            } else if (ddMenu.children.length === 1) {
+                                selectDdItem(0);
+                            }
+                        } else if (e.key === 'Escape') {
+                            hideDd();
+                        } else if (e.key === 'Tab') {
+                            hideDd();
+                        }
+                    } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                        showDd(el);
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
+
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.field-input-wrapper') && !e.target.closest('.barcode-input-container') && !e.target.closest('#formDdMenu')) {
+                hideDd();
+            }
+        });
+
+        // Dropdown item click
+        ddMenu.addEventListener('click', (e) => {
+            const item = e.target.closest('.form-dropdown-item');
+            if (item) {
+                const idx = parseInt(item.dataset.idx);
+                selectDdItem(idx);
+            }
+        });
+
+        // Arrow key and Enter navigation for form fields
+        const formFields = [
+            'edit-code',
+            'edit-barcode-input',
+            'edit-name',
+            'edit-category',
+            'edit-subcategory',
+            'edit-brand',
+            'edit-stock',
+            'edit-cost',
+            'edit-price',
+            'edit-box-price',
+            'edit-unit',
+            'edit-purchase-unit',
+            'edit-conversion',
+            'edit-remark',
+            'edit-supplier-input',
+            'edit-shop-input'
+        ];
+
+        function handleFormKeyDown(e) {
+            const fieldId = e.target.id;
+            const fieldIdx = formFields.indexOf(fieldId);
+            if (fieldIdx === -1) return;
+
+            // If dropdown is open and field is a dropdown field, let dropdown handler manage keys
+            if (ddOpen && dropdownFields.includes(fieldId)) return;
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (fieldIdx < formFields.length - 1) {
+                    document.getElementById(formFields[fieldIdx + 1])?.focus();
+                }
+            } else if (e.key === 'ArrowRight' && e.target.tagName === 'INPUT') {
+                const selStart = e.target.selectionStart;
+                const val = e.target.value;
+                if (selStart === val.length) {
+                    e.preventDefault();
+                    if (fieldIdx < formFields.length - 1) {
+                        document.getElementById(formFields[fieldIdx + 1])?.focus();
+                    }
+                }
+            } else if (e.key === 'ArrowLeft' && e.target.tagName === 'INPUT') {
+                const selStart = e.target.selectionStart;
+                if (selStart === 0) {
+                    e.preventDefault();
+                    if (fieldIdx > 0) {
+                        document.getElementById(formFields[fieldIdx - 1])?.focus();
+                    }
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextRowIdx = fieldIdx + 4;
+                if (nextRowIdx < formFields.length) {
+                    document.getElementById(formFields[nextRowIdx])?.focus();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevRowIdx = fieldIdx - 4;
+                if (prevRowIdx >= 0) {
+                    document.getElementById(formFields[prevRowIdx])?.focus();
+                }
+            }
+        }
+
+        formFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('keydown', handleFormKeyDown);
+        });
+
+        // Wait for Supabase client to fully initialize before loading data
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(init, 150);
+        });
+    </script>
+</body>
+
+</html>

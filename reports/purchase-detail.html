@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Detail Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+    <style>
+        .tshell table { min-width: 1400px; }
+        .tshell th, .tshell td { padding: 10px 12px; }
+        
+        /* Column widths */
+        th:nth-child(1) { width: 50px; }  /* # */
+        th:nth-child(2) { width: 100px; } /* Item Code */
+        th:nth-child(3) { width: 140px; } /* Barcode */
+        th:nth-child(4) { width: auto; }  /* Description */
+        th:nth-child(5) { width: 100px; } /* Category */
+        th:nth-child(6) { width: 100px; } /* Sub-Category */
+        th:nth-child(7) { width: 90px; }  /* Brand */
+        th:nth-child(8) { width: 90px; }  /* Cost */
+        th:nth-child(9) { width: 120px; } /* Total Qty */
+        th:nth-child(10) { width: 120px; } /* Total Amount */
+        th:nth-child(11) { width: 120px; } /* Total Discount */
+        th:nth-child(12) { width: 100px; } /* Shop */
+        th:nth-child(13) { width: 100px; } /* Supplier */
+    </style>
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-truck" style="color:var(--green)"></i> Purchase Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Purchase Detail Report</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Total Products</div>
+                <div class="ds-v" id="h-pd-products" style="color:var(--blue)">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Purchase Qty</div>
+                <div class="ds-v" id="h-pd-qty" style="color:var(--green)">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Amount</div>
+                <div class="ds-v" id="h-pd-amount" style="color:var(--yellow)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Discount</div>
+                <div class="ds-v" id="h-pd-discount" style="color:var(--red)">0 Ks</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="row-num">#</th>
+                        <th>Item Code</th>
+                        <th>Barcode</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Sub-Category</th>
+                        <th>Brand</th>
+                        <th>Cost</th>
+                        <th>Total Purchase Qty</th>
+                        <th>Total Amount</th>
+                        <th>Total Discount</th>
+                        <th>Shop</th>
+                        <th>Supplier</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-purchase-detail"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-purchase-detail"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'purchase-detail';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            // Handle stats
+            const products = new Set(DATA.map(d => d.itemCode)).size;
+            const totalQty = DATA.reduce((a, b) => a + (b.qty || 0), 0);
+            const totalAmount = DATA.reduce((a, b) => a + (b.amount || 0), 0);
+            const totalDiscount = DATA.reduce((a, b) => a + (b.discount || 0), 0);
+
+            document.getElementById('h-pd-products').innerText = products;
+            document.getElementById('h-pd-qty').innerText = fmt(totalQty);
+            document.getElementById('h-pd-amount').innerText = fmt(totalAmount) + ' Ks';
+            document.getElementById('h-pd-discount').innerText = fmt(totalDiscount) + ' Ks';
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                const startNum = pg * PS + 1;
+                body.innerHTML = sl.map((r, idx) => `
+                    <tr>
+                        <td class="row-num">${startNum + idx}</td>
+                        <td><div class="cell-container"><b>${r.itemCode || '-'}</b></div></td>
+                        <td><div class="cell-container">${r.barcode || '-'}</div></td>
+                        <td><div class="cell-container">${r.description || '-'}</div></td>
+                        <td><div class="cell-container">${r.category || '-'}</div></td>
+                        <td><div class="cell-container">${r.subCategory || '-'}</div></td>
+                        <td><div class="cell-container">${r.brand || '-'}</div></td>
+                        <td><div class="cell-container ta">${fmt(r.cost)}</div></td>
+                        <td><div class="cell-container te">${fmt(r.qty)}</div></td>
+                        <td><div class="cell-container ta" style="color:var(--green)"><b>${fmt(r.amount)}</b></div></td>
+                        <td><div class="cell-container ta" style="color:var(--red)">-${fmt(r.discount)}</div></td>
+                        <td><div class="cell-container">${r.shop || 'Main Shop'}</div></td>
+                        <td><div class="cell-container">${r.supplier || '-'}</div></td>
+                    </tr>
+                `).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

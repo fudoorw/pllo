@@ -1,0 +1,1194 @@
+/**
+ * Admin Dashboard - Categories & Variations Module
+ */
+
+// Utility: HTML Escaping
+window.escapeHtml = function (text) {
+    if (!text) return "";
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+};
+
+// --- Category Management State ---
+window.categoriesData = [];
+window.subcategoriesData = [];
+window.modifiedCategories = new Set();
+window.deletedCategories = new Set();
+window.modifiedSubcategories = new Set();
+window.deletedSubcategories = new Set();
+
+// Switch between Main Categories and Subcategories tabs
+window.switchCategoryTab = function (tab) {
+    const mainView = document.getElementById('mainCategoriesView');
+    const subView = document.getElementById('subcategoriesView');
+
+    if (!mainView || !subView) return;
+
+    if (tab === 'main') {
+        mainView.classList.remove('hidden');
+        subView.classList.add('hidden');
+    } else {
+        subView.classList.remove('hidden');
+        mainView.classList.add('hidden');
+    }
+};
+
+window.saveCategoriesDraft = function () {
+    try {
+        const draft = {
+            categoriesData: window.categoriesData,
+            subcategoriesData: window.subcategoriesData,
+            modifiedCategories: Array.from(window.modifiedCategories),
+            deletedCategories: Array.from(window.deletedCategories),
+            modifiedSubcategories: Array.from(window.modifiedSubcategories),
+            deletedSubcategories: Array.from(window.deletedSubcategories)
+        };
+        localStorage.setItem('pos_draft_categories', JSON.stringify(draft));
+        window.updateModuleSyncStatus('Categories', 'Unsaved Changes (Local)');
+    } catch (e) {
+        console.error('Failed to save categories draft:', e);
+    }
+};
+
+window.clearCategoriesDraft = function () {
+    localStorage.removeItem('pos_draft_categories');
+    window.updateModuleSyncStatus('Categories', 'Synced to Supabase');
+};
+
+// Load all categories and subcategories
+window.loadCategories = async function () {
+    try {
+        // Check for local draft first
+        const localDraft = localStorage.getItem('pos_draft_categories');
+        if (localDraft) {
+            try {
+                const draft = JSON.parse(localDraft);
+                const hasMods = (draft.modifiedCategories && draft.modifiedCategories.length > 0) ||
+                    (draft.deletedCategories && draft.deletedCategories.length > 0) ||
+                    (draft.modifiedSubcategories && draft.modifiedSubcategories.length > 0) ||
+                    (draft.deletedSubcategories && draft.deletedSubcategories.length > 0);
+
+                if (hasMods) {
+                    if (confirm('You have unsaved category changes. Would you like to resume?')) {
+                        window.categoriesData = draft.categoriesData;
+                        window.subcategoriesData = draft.subcategoriesData;
+                        window.modifiedCategories = new Set(draft.modifiedCategories);
+                        window.deletedCategories = new Set(draft.deletedCategories);
+                        window.modifiedSubcategories = new Set(draft.modifiedSubcategories);
+                        window.deletedSubcategories = new Set(draft.deletedSubcategories);
+                        window.renderCategories();
+                        window.renderSubcategories();
+                        window.updateModuleSyncStatus('Categories', 'Unsaved Changes (Local)');
+                        return;
+                    } else {
+                        localStorage.removeItem('pos_draft_categories');
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing categories draft:', e);
+                localStorage.removeItem('pos_draft_categories');
+            }
+        }
+
+        // Load main categories
+        const { data: categories, error: catError } = await window.supabase
+            .from('categories')
+            .select('*')
+            .order('name', { ascending: true });
+
+        if (catError) throw catError;
+        window.categoriesData = categories || [];
+
+        // Load subcategories
+        const { data: subcategories, error: subError } = await window.supabase
+            .from('subcategories')
+            .select(`
+                *,
+                categories (name)
+            `)
+            .order('name', { ascending: true });
+
+        if (subError) throw subError;
+        window.subcategoriesData = subcategories || [];
+
+        window.renderCategories();
+        window.renderSubcategories();
+
+        // Reset tracking
+        window.modifiedCategories.clear();
+        window.deletedCategories.clear();
+        window.modifiedSubcategories.clear();
+        window.deletedSubcategories.clear();
+        window.updateModuleSyncStatus('Categories', 'Synced to Supabase');
+
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        alert('Failed to load categories: ' + error.message);
+    }
+};
+
+// Render main categories table
+window.renderCategories = function () {
+    const tbody = document.getElementById('categoriesBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    window.categoriesData.forEach((category, index) => {
+        const isSelected = window.selectedIds && window.selectedIds.has(category.id);
+        const tr = document.createElement('tr');
+        tr.className = 'excel-tr';
+        if (window.modifiedCategories.has(category.id)) tr.classList.add('modified');
+        if (category.id && category.id.toString().startsWith('new_')) tr.classList.add('new-row');
+        tr.dataset.index = index;
+
+        tr.innerHTML = `
+            <td style="text-align: center;">
+                <label class="checkbox-container">
+                    <input type="checkbox" class="selection-checkbox" data-id="${category.id}" ${isSelected ? 'checked' : ''} onchange="window.handleSelectionChange(this)">
+                    <span class="checkmark"></span>
+                </label>
+            </td>
+            <td style="text-align: center;">${index + 1}</td>
+            <td><input type="text" class="excel-input" value="${window.escapeHtml(category.name || '')}" data-field="name" oninput="window.markCategoryModified(this)"></td>
+            <td><input type="text" class="excel-input" value="${window.escapeHtml(category.description || '')}" data-field="description" oninput="window.markCategoryModified(this)"></td>
+            <td class="action-cell" style="text-align: center;">
+                <button class="btn-premium-danger" onclick="window.deleteCategory(${index})" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+};
+
+// Render subcategories table
+window.renderSubcategories = function () {
+    const tbody = document.getElementById('subcategoriesBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    window.subcategoriesData.forEach((sub, index) => {
+        const isSelected = window.selectedIds && window.selectedIds.has(sub.id);
+        const tr = document.createElement('tr');
+        tr.className = 'excel-tr';
+        if (window.modifiedSubcategories.has(sub.id)) tr.classList.add('modified');
+        if (sub.id && sub.id.toString().startsWith('new_')) tr.classList.add('new-row');
+        tr.dataset.index = index;
+
+        // Get current category name
+        const currentCat = window.categoriesData.find(c => c.id === sub.category_id);
+        const currentCatName = currentCat ? currentCat.name : '';
+
+        tr.innerHTML = `
+            <td style="text-align: center;">
+                <label class="checkbox-container">
+                    <input type="checkbox" class="selection-checkbox" data-id="${sub.id}" ${isSelected ? 'checked' : ''} onchange="window.handleSelectionChange(this)">
+                    <span class="checkmark"></span>
+                </label>
+            </td>
+            <td style="text-align: center;">${index + 1}</td>
+            <td class="dropdown-cell">
+                <input type="text" class="excel-input dropdown-trigger" data-field="category_id" data-row="${index}" value="${window.escapeHtml(currentCatName)}" data-value="${sub.category_id || ''}" readonly placeholder="Select Category" onclick="window.showCategoryDropdown(this)">
+            </td>
+            <td><input type="text" class="excel-input" value="${window.escapeHtml(sub.name || '')}" data-field="name" oninput="window.markSubcategoryModified(this)"></td>
+            <td><input type="text" class="excel-input" value="${window.escapeHtml(sub.description || '')}" data-field="description" oninput="window.markSubcategoryModified(this)"></td>
+            <td class="action-cell" style="text-align: center;">
+                <button class="btn-premium-danger" onclick="window.deleteSubcategory(${index})" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+};
+
+// Mark category as modified
+window.markCategoryModified = function (input) {
+    const tr = input.closest('tr');
+    const index = parseInt(tr.dataset.index);
+    const category = window.categoriesData[index];
+    const field = input.dataset.field;
+    const value = input.value;
+
+    category[field] = value;
+    window.modifiedCategories.add(category.id);
+
+    tr.classList.add('modified');
+    window.saveCategoriesDraft();
+};
+
+// Mark subcategory as modified
+window.markSubcategoryModified = function (input) {
+    const tr = input.closest('tr');
+    const index = parseInt(tr.dataset.index);
+    const sub = window.subcategoriesData[index];
+    const field = input.dataset.field;
+    const value = input.value;
+
+    sub[field] = value;
+    window.modifiedSubcategories.add(sub.id);
+
+    tr.classList.add('modified');
+    window.saveCategoriesDraft();
+};
+
+// Add new category row
+window.addNewCategory = function () {
+    const newCategory = {
+        id: crypto.randomUUID(),
+        name: '',
+        description: '',
+        isNew: true
+    };
+
+    window.categoriesData.push(newCategory);
+    window.modifiedCategories.add(newCategory.id);
+
+    window.renderCategories();
+    // Focus new row name input
+    const lastTr = document.getElementById('categoriesBody').lastElementChild;
+    if (lastTr) lastTr.querySelector('input[data-field="name"]').focus();
+    window.saveCategoriesDraft();
+};
+
+// Add new subcategory row
+window.addNewSubcategory = function () {
+    const newSubcategory = {
+        id: crypto.randomUUID(),
+        category_id: '',
+        name: '',
+        description: '',
+        isNew: true
+    };
+
+    window.subcategoriesData.push(newSubcategory);
+    window.modifiedSubcategories.add(newSubcategory.id);
+
+    window.renderSubcategories();
+    // Focus new row name input
+    const lastTr = document.getElementById('subcategoriesBody').lastElementChild;
+    if (lastTr) lastTr.querySelector('input[data-field="name"]').focus();
+    window.saveCategoriesDraft();
+};
+
+// Delete category
+window.deleteCategory = function (index) {
+    if (confirm('Are you sure you want to delete this category? This will also delete all its subcategories.')) {
+        const category = window.categoriesData[index];
+        if (category.id && !category.id.toString().startsWith('new_')) {
+            window.deletedCategories.add(category.id);
+        }
+        window.modifiedCategories.delete(category.id);
+        window.categoriesData.splice(index, 1);
+        window.renderCategories();
+        window.saveCategoriesDraft();
+    }
+};
+
+window.deleteSubcategory = function (index) {
+    if (confirm('Are you sure you want to delete this subcategory?')) {
+        const subcategory = window.subcategoriesData[index];
+        if (subcategory.id && !subcategory.id.toString().startsWith('new_')) {
+            window.deletedSubcategories.add(subcategory.id);
+        }
+        window.modifiedSubcategories.delete(subcategory.id);
+        window.subcategoriesData.splice(index, 1);
+        window.renderSubcategories();
+        window.saveCategoriesDraft();
+    }
+};
+
+// Save all category changes
+window.saveCategoryChanges = async function () {
+    window.showLoading();
+    try {
+        const categoriesToSave = window.categoriesData.filter(c => window.modifiedCategories.has(c.id));
+        const subcategoriesToSave = window.subcategoriesData.filter(s => window.modifiedSubcategories.has(s.id));
+
+        // Delete categories
+        if (window.deletedCategories.size > 0) {
+            const { error: deleteError } = await window.supabase
+                .from('categories')
+                .delete()
+                .in('id', Array.from(window.deletedCategories));
+
+            if (deleteError) throw deleteError;
+        }
+
+        if (categoriesToSave.length > 0) {
+            const { error: upsertError } = await window.supabase
+                .from('categories')
+                .upsert(categoriesToSave.map(cat => ({
+                    id: cat.id,
+                    name: cat.name,
+                    description: cat.description
+                })));
+
+            if (upsertError) throw upsertError;
+        }
+
+        // Handle subcategory deletions
+        if (window.deletedSubcategories.size > 0) {
+            const { error: subDeleteError } = await window.supabase
+                .from('subcategories')
+                .delete()
+                .in('id', Array.from(window.deletedSubcategories));
+            if (subDeleteError) throw subDeleteError;
+        }
+
+        if (subcategoriesToSave.length > 0) {
+            const { error: upsertError } = await window.supabase
+                .from('subcategories')
+                .upsert(subcategoriesToSave.map(sub => ({
+                    id: sub.id,
+                    category_id: sub.category_id,
+                    name: sub.name,
+                    description: sub.description
+                })));
+
+            if (upsertError) throw upsertError;
+        }
+
+        // Capture deletions and Clear tracking/draft
+        const delCats = Array.from(window.deletedCategories);
+        const delSubs = Array.from(window.deletedSubcategories);
+
+        window.modifiedCategories.clear();
+        window.deletedCategories.clear();
+        window.modifiedSubcategories.clear();
+        window.deletedSubcategories.clear();
+        window.clearCategoriesDraft();
+
+        alert('All changes saved successfully!');
+
+        // Update UI locally
+        if (delCats.length > 0) window.categoriesData = window.categoriesData.filter(c => !delCats.includes(c.id));
+        if (delSubs.length > 0) window.subcategoriesData = window.subcategoriesData.filter(s => !delSubs.includes(s.id));
+
+        window.categoriesData.forEach(c => { if (c.isNew) c.isNew = false; });
+        window.subcategoriesData.forEach(s => { if (s.isNew) s.isNew = false; });
+
+        window.renderCategories();
+        window.renderSubcategories();
+
+        // Sync reference data in core
+        if (window.loadReferenceData) await window.loadReferenceData();
+
+        // Update product grid if visible (checks parent if in iframe)
+        const checkDoc = (window.parent && window.parent !== window) ? window.parent.document : document;
+        const productsView = checkDoc.getElementById('view-products');
+        if (productsView && !productsView.classList.contains('hidden') && window.renderGrid) {
+            window.renderGrid();
+        }
+    } catch (error) {
+        console.error('Error saving categories:', error);
+        alert('Failed to save categories: ' + error.message);
+    } finally {
+        window.hideLoading();
+    }
+};
+
+// --- Variation Management State ---
+window.variationTypesData = [];
+window.variationOptionsData = [];
+window.modifiedVariationTypes = new Set();
+window.deletedVariationTypes = new Set();
+window.modifiedVariationOptions = new Set();
+window.deletedVariationOptions = new Set();
+
+// Switch between Variation Types and Options tabs
+window.switchVariationTab = function (tab) {
+    const typesView = document.getElementById('variationTypesView');
+    const optionsView = document.getElementById('variationOptionsView');
+
+    if (!typesView || !optionsView) return;
+
+    if (tab === 'types') {
+        typesView.classList.remove('hidden');
+        optionsView.classList.add('hidden');
+    } else {
+        optionsView.classList.remove('hidden');
+        typesView.classList.add('hidden');
+    }
+};
+
+window.saveVariationsDraft = function () {
+    try {
+        const draft = {
+            variationTypesData: window.variationTypesData,
+            variationOptionsData: window.variationOptionsData,
+            modifiedVariationTypes: Array.from(window.modifiedVariationTypes),
+            deletedVariationTypes: Array.from(window.deletedVariationTypes),
+            modifiedVariationOptions: Array.from(window.modifiedVariationOptions),
+            deletedVariationOptions: Array.from(window.deletedVariationOptions)
+        };
+        localStorage.setItem('pos_draft_variations', JSON.stringify(draft));
+        window.updateModuleSyncStatus('Variations', 'Unsaved Changes (Local)');
+    } catch (e) { console.error('Failed to save variations draft:', e); }
+};
+
+window.clearVariationsDraft = function () {
+    localStorage.removeItem('pos_draft_variations');
+    window.updateModuleSyncStatus('Variations', 'Synced to Supabase');
+};
+
+// Load all variations data
+window.loadVariations = async function () {
+    try {
+        // Check draft
+        const localDraft = localStorage.getItem('pos_draft_variations');
+        if (localDraft) {
+            try {
+                const draft = JSON.parse(localDraft);
+                const hasMods = (draft.modifiedVariationTypes && draft.modifiedVariationTypes.length > 0) ||
+                    (draft.deletedVariationTypes && draft.deletedVariationTypes.length > 0) ||
+                    (draft.modifiedVariationOptions && draft.modifiedVariationOptions.length > 0) ||
+                    (draft.deletedVariationOptions && draft.deletedVariationOptions.length > 0);
+
+                if (hasMods && confirm('Resume unsaved variation changes?')) {
+                    window.variationTypesData = draft.variationTypesData;
+                    window.variationOptionsData = draft.variationOptionsData;
+                    window.modifiedVariationTypes = new Set(draft.modifiedVariationTypes);
+                    window.deletedVariationTypes = new Set(draft.deletedVariationTypes);
+                    window.modifiedVariationOptions = new Set(draft.modifiedVariationOptions);
+                    window.deletedVariationOptions = new Set(draft.deletedVariationOptions);
+                    window.renderVariationTypes();
+                    window.renderVariationOptions();
+                    window.updateModuleSyncStatus('Variations', 'Unsaved Changes (Local)');
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem('pos_draft_variations');
+            }
+        }
+
+        // Load variation types
+        const { data: types, error: typesError } = await window.supabase
+            .from('variation_types')
+            .select('*')
+            .order('name', { ascending: true });
+
+        if (typesError) throw typesError;
+
+        window.variationTypesData = types || [];
+        window.renderVariationTypes();
+
+        // Load variation options
+        const { data: options, error: optionsError } = await window.supabase
+            .from('variation_options')
+            .select(`
+                *,
+                variation_types (name)
+            `)
+            .order('option_value', { ascending: true });
+
+        if (optionsError) throw optionsError;
+
+        window.variationOptionsData = options || [];
+        window.renderVariationOptions();
+
+        // Reset tracking
+        window.modifiedVariationTypes.clear();
+        window.deletedVariationTypes.clear();
+        window.modifiedVariationOptions.clear();
+        window.deletedVariationOptions.clear();
+        window.updateModuleSyncStatus('Variations', 'Synced to Supabase');
+
+    } catch (error) {
+        console.error('Error loading variations:', error);
+        alert('Failed to load variations: ' + error.message);
+    }
+};
+
+// Render variation types table
+window.renderVariationTypes = function () {
+    const tbody = document.getElementById('variationTypesBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    window.variationTypesData.forEach((type, index) => {
+        const isSelected = window.selectedIds && window.selectedIds.has(type.id);
+        const tr = document.createElement('tr');
+        tr.className = 'excel-tr';
+        if (window.modifiedVariationTypes.has(type.id)) tr.classList.add('modified');
+        if (type.id && type.id.toString().startsWith('new_')) tr.classList.add('new-row');
+        tr.dataset.index = index;
+
+        tr.innerHTML = `
+            <td style="text-align: center;">
+                <label class="checkbox-container">
+                    <input type="checkbox" class="selection-checkbox" data-id="${type.id}" ${isSelected ? 'checked' : ''} onchange="window.handleSelectionChange(this)">
+                    <span class="checkmark"></span>
+                </label>
+            </td>
+            <td style="text-align: center;">${index + 1}</td>
+            <td><input type="text" class="excel-input" value="${window.escapeHtml(type.name || '')}" data-field="name" oninput="window.markVariationTypeModified(this)"></td>
+            <td><input type="text" class="excel-input" value="${window.escapeHtml(type.description || '')}" data-field="description" oninput="window.markVariationTypeModified(this)"></td>
+            <td class="action-cell" style="text-align: center;">
+                <button class="btn-premium-danger" onclick="window.deleteVariationType(${index})" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+};
+
+// Render variation options table
+window.renderVariationOptions = function () {
+    const tbody = document.getElementById('variationOptionsBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    window.variationOptionsData.forEach((opt, index) => {
+        const isSelected = window.selectedIds && window.selectedIds.has(opt.id);
+        const tr = document.createElement('tr');
+        tr.className = 'excel-tr';
+        if (window.modifiedVariationOptions.has(opt.id)) tr.classList.add('modified');
+        if (opt.id && opt.id.toString().startsWith('new_')) tr.classList.add('new-row');
+        tr.dataset.index = index;
+
+        // Get current type name
+        const currentType = window.variationTypesData.find(t => t.id === opt.variation_type_id);
+        const currentTypeName = currentType ? currentType.name : '';
+
+        tr.innerHTML = `
+            <td style="text-align: center;">
+                <label class="checkbox-container">
+                    <input type="checkbox" class="selection-checkbox" data-id="${opt.id}" ${isSelected ? 'checked' : ''} onchange="window.handleSelectionChange(this)">
+                    <span class="checkmark"></span>
+                </label>
+            </td>
+            <td style="text-align: center;">${index + 1}</td>
+            <td class="dropdown-cell">
+                <input type="text" class="excel-input dropdown-trigger" data-field="variation_type_id" data-row="${index}" value="${window.escapeHtml(currentTypeName)}" data-value="${opt.variation_type_id || ''}" readonly placeholder="Select Type" onclick="window.showVariationTypeDropdown(this)">
+            </td>
+            <td><input type="text" class="excel-input" value="${window.escapeHtml(opt.option_value || '')}" data-field="option_value" oninput="window.markVariationOptionModified(this)"></td>
+            <td class="action-cell" style="text-align: center;">
+                <button class="btn-premium-danger" onclick="window.deleteVariationOption(${index})" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+};
+// Mark variation type as modified
+window.markVariationTypeModified = function (input) {
+    const tr = input.closest('tr');
+    const index = parseInt(tr.dataset.index);
+    const type = window.variationTypesData[index];
+    const field = input.dataset.field;
+
+    type[field] = input.value;
+    window.modifiedVariationTypes.add(type.id);
+
+    tr.classList.add('modified');
+    window.saveVariationsDraft();
+};
+
+// Mark variation option as modified
+window.markVariationOptionModified = function (input) {
+    const tr = input.closest('tr');
+    const index = parseInt(tr.dataset.index);
+    const opt = window.variationOptionsData[index];
+    const field = input.dataset.field;
+
+    opt[field] = input.value;
+    window.modifiedVariationOptions.add(opt.id);
+
+    tr.classList.add('modified');
+    window.saveVariationsDraft();
+};
+
+// Add new variation type row
+window.addNewVariationType = function () {
+    const newType = {
+        id: crypto.randomUUID(),
+        name: '',
+        description: '',
+        isNew: true
+    };
+
+    window.variationTypesData.push(newType);
+    window.modifiedVariationTypes.add(newType.id);
+
+    window.renderVariationTypes();
+    const lastTr = document.getElementById('variationTypesBody').lastElementChild;
+    if (lastTr) lastTr.querySelector('input[data-field="name"]').focus();
+    window.saveVariationsDraft();
+};
+
+// Add new variation option row
+window.addNewVariationOption = function () {
+    const newOption = {
+        id: crypto.randomUUID(),
+        variation_type_id: '',
+        option_value: '',
+        isNew: true
+    };
+
+    window.variationOptionsData.push(newOption);
+    window.modifiedVariationOptions.add(newOption.id);
+
+    window.renderVariationOptions();
+    const lastTr = document.getElementById('variationOptionsBody').lastElementChild;
+    if (lastTr) lastTr.querySelector('input[data-field="option_value"]').focus();
+    window.saveVariationsDraft();
+};
+
+// Delete variation type
+window.deleteVariationType = function (index) {
+    if (confirm('Are you sure you want to delete this variation type? This will also delete all its options.')) {
+        const type = window.variationTypesData[index];
+        if (type.id && !type.id.toString().startsWith('new_')) {
+            window.deletedVariationTypes.add(type.id);
+        }
+        window.modifiedVariationTypes.delete(type.id);
+        window.variationTypesData.splice(index, 1);
+        window.renderVariationTypes();
+        window.saveVariationsDraft();
+    }
+};
+
+// Delete variation option
+window.deleteVariationOption = function (index) {
+    if (confirm('Are you sure you want to delete this option?')) {
+        const option = window.variationOptionsData[index];
+        if (option.id && !option.id.toString().startsWith('new_')) {
+            window.deletedVariationOptions.add(option.id);
+        }
+        window.modifiedVariationOptions.delete(option.id);
+        window.variationOptionsData.splice(index, 1);
+        window.renderVariationOptions();
+        window.saveVariationsDraft();
+    }
+};
+
+// Save all variation changes
+window.saveVariationChanges = async function () {
+    window.showLoading();
+    try {
+        // Delete types
+        if (window.deletedVariationTypes.size > 0) {
+            const { error: deleteError } = await window.supabase
+                .from('variation_types')
+                .delete()
+                .in('id', Array.from(window.deletedVariationTypes));
+
+            if (deleteError) throw deleteError;
+        }
+
+        // Upsert types
+        const typesToSave = Array.from(window.modifiedVariationTypes)
+            .map(id => window.variationTypesData.find(t => t.id === id))
+            .filter(type => type && type.name);
+
+        if (typesToSave.length > 0) {
+            const { error: upsertError } = await window.supabase
+                .from('variation_types')
+                .upsert(typesToSave.map(type => ({
+                    id: type.id,
+                    name: type.name,
+                    description: type.description
+                })));
+
+            if (upsertError) throw upsertError;
+        }
+
+        // Delete options
+        if (window.deletedVariationOptions.size > 0) {
+            const { error: deleteError } = await window.supabase
+                .from('variation_options')
+                .delete()
+                .in('id', Array.from(window.deletedVariationOptions));
+
+            if (deleteError) throw deleteError;
+        }
+
+        // Upsert options
+        const optionsToSave = Array.from(window.modifiedVariationOptions)
+            .map(id => window.variationOptionsData.find(o => o.id === id))
+            .filter(opt => opt && opt.option_value && opt.variation_type_id);
+
+        if (optionsToSave.length > 0) {
+            const { error: upsertError } = await window.supabase
+                .from('variation_options')
+                .upsert(optionsToSave.map(opt => ({
+                    id: opt.id,
+                    variation_type_id: opt.variation_type_id,
+                    option_value: opt.option_value
+                })));
+
+            if (upsertError) throw upsertError;
+        }
+
+        // Capture and Clear
+        const delTypes = Array.from(window.deletedVariationTypes);
+        const delOpts = Array.from(window.deletedVariationOptions);
+
+        window.modifiedVariationTypes.clear();
+        window.deletedVariationTypes.clear();
+        window.modifiedVariationOptions.clear();
+        window.deletedVariationOptions.clear();
+        window.clearVariationsDraft();
+
+        alert('All changes saved successfully!');
+
+        // Local UI Update
+        if (delTypes.length > 0) window.variationTypesData = window.variationTypesData.filter(t => !delTypes.includes(t.id));
+        if (delOpts.length > 0) window.variationOptionsData = window.variationOptionsData.filter(o => !delOpts.includes(o.id));
+
+        window.variationTypesData.forEach(t => { if (t.isNew) t.isNew = false; });
+        window.variationOptionsData.forEach(o => { if (o.isNew) o.isNew = false; });
+
+        window.renderVariationTypes();
+        window.renderVariationOptions();
+
+        if (window.loadReferenceData) await window.loadReferenceData();
+
+        // Update product grid if visible (checks parent if in iframe)
+        const checkDoc = (window.parent && window.parent !== window) ? window.parent.document : document;
+        const productsView = checkDoc.getElementById('view-products');
+        if (productsView && !productsView.classList.contains('hidden') && window.parent.renderGrid) {
+            window.parent.renderGrid();
+        }
+    } catch (error) {
+        console.error('Error saving variations:', error);
+        alert('Failed to save variations: ' + error.message);
+    } finally {
+        window.hideLoading();
+    }
+};
+
+window.executeBulkDelete = async function (ids) {
+    if (!ids || ids.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${ids.length} selected items?`)) return;
+
+    window.showLoading();
+    try {
+        let table = '';
+        if (document.getElementById('categoriesBody')) {
+            // Check which tab is active in Category Manager
+            const subView = document.getElementById('subcategoriesView');
+            table = (subView && !subView.classList.contains('hidden')) ? 'subcategories' : 'categories';
+        } else if (document.getElementById('variationTypesBody')) {
+            // Check which tab is active in Variation Manager
+            const optionsView = document.getElementById('variationOptionsView');
+            table = (optionsView && !optionsView.classList.contains('hidden')) ? 'variation_options' : 'variation_types';
+        }
+
+        if (!table) throw new Error('Could not determine active table for deletion');
+
+        const { error } = await window.supabase.from(table).delete().in('id', ids);
+        if (error) throw error;
+
+        // Clear local selection
+        if (window.clearSelection) window.clearSelection();
+
+        alert('Bulk deletion successful!');
+
+        // Refresh data
+        if (table.includes('variation')) {
+            await window.loadVariations();
+        } else {
+            await window.loadCategories();
+        }
+
+        // Sync with parent grid if needed
+        if (window.renderGrid) window.renderGrid();
+        if (window.loadReferenceData) await window.loadReferenceData();
+
+    } catch (e) {
+        console.error('Bulk delete error:', e);
+        alert('Failed to delete items: ' + e.message);
+    } finally {
+        window.hideLoading();
+    }
+};
+
+window.handleCategoryExcelImport = function (input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    window.showLoading();
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        window.hideLoading();
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            if (rows.length < 2) {
+                alert("The Excel file doesn't contain enough data (needs header and at least 1 row).");
+                return;
+            }
+
+            const mainView = document.getElementById('mainCategoriesView');
+            const isMain = mainView && !mainView.classList.contains('hidden');
+
+            const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+
+            let addedCount = 0;
+            let skippedCount = 0;
+
+            if (isMain) {
+                const nameIdx = headers.findIndex(h => h.includes('name'));
+                const descIdx = headers.findIndex(h => h.includes('desc'));
+
+                if (nameIdx === -1) {
+                    alert("Could not find a 'Name' column in the Excel file.");
+                    return;
+                }
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || !row[nameIdx]) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const newId = 'new_' + Date.now() + '_' + addedCount;
+                    window.categoriesData.push({
+                        id: newId,
+                        name: row[nameIdx] || '',
+                        description: descIdx !== -1 ? (row[descIdx] || '') : '',
+                        isNew: true
+                    });
+                    window.modifiedCategories.add(newId);
+                    addedCount++;
+                }
+
+                window.renderCategories();
+            } else {
+                const mainCatIdx = headers.findIndex(h => h.includes('main') || h === 'category');
+                const subCatIdx = headers.findIndex(h => h.includes('sub') || h === 'name');
+                const descIdx = headers.findIndex(h => h.includes('desc'));
+
+                if (mainCatIdx === -1 || subCatIdx === -1) {
+                    alert("Could not find 'Main Category' and 'Subcategory Name' columns.");
+                    return;
+                }
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || !row[mainCatIdx] || !row[subCatIdx]) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const mainCatName = String(row[mainCatIdx]).trim().toLowerCase();
+                    const mainCat = window.categoriesData.find(c => c.name && c.name.toLowerCase() === mainCatName);
+
+                    if (!mainCat) {
+                        console.warn(`Category '${row[mainCatIdx]}' not found, skipping subcategory '${row[subCatIdx]}'`);
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const newId = 'new_' + Date.now() + '_' + addedCount;
+                    window.subcategoriesData.push({
+                        id: newId,
+                        category_id: mainCat.id,
+                        name: row[subCatIdx] || '',
+                        description: descIdx !== -1 ? (row[descIdx] || '') : '',
+                        isNew: true
+                    });
+                    window.modifiedSubcategories.add(newId);
+                    addedCount++;
+                }
+
+                window.renderSubcategories();
+            }
+
+            window.saveCategoriesDraft();
+            alert(`Successfully imported ${addedCount} rows.${skippedCount > 0 ? ' Skipped ' + skippedCount + ' rows.' : ''}`);
+
+        } catch (err) {
+            console.error("Excel import error:", err);
+            alert("Failed to import Excel file: " + err.message);
+        }
+
+        input.value = '';
+    };
+    reader.onerror = function () {
+        window.hideLoading();
+        alert("Failed to read file.");
+        input.value = '';
+    }
+    reader.readAsArrayBuffer(file);
+};
+
+window.exportCategoryExcel = function () {
+    const mainView = document.getElementById('mainCategoriesView');
+    const isMain = mainView && !mainView.classList.contains('hidden');
+
+    let dataToExport = [];
+    let fileName = '';
+
+    if (isMain) {
+        dataToExport = window.categoriesData.map(c => ({
+            'Name': c.name || '',
+            'Description': c.description || ''
+        }));
+        fileName = `categories_${new Date().toISOString().split('T')[0]}.xlsx`;
+    } else {
+        dataToExport = window.subcategoriesData.map(s => {
+            const mainCat = window.categoriesData.find(c => c.id === s.category_id);
+            return {
+                'Main Category': mainCat ? mainCat.name : '',
+                'Subcategory Name': s.name || '',
+                'Description': s.description || ''
+            };
+        });
+        fileName = `subcategories_${new Date().toISOString().split('T')[0]}.xlsx`;
+    }
+
+    if (dataToExport.length === 0) {
+        alert('No data to export.');
+        return;
+    }
+
+    try {
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, isMain ? 'Categories' : 'Subcategories');
+        XLSX.writeFile(workbook, fileName);
+    } catch (err) {
+        console.error('Export error:', err);
+        alert('Failed to export data: ' + err.message);
+    }
+};
+
+// --- Arrow Key Navigation ---
+function getCategoryGridInputs(tableBodyId) {
+    const tbody = document.getElementById(tableBodyId);
+    if (!tbody) return [];
+    const rows = tbody.querySelectorAll('.excel-tr');
+    const inputs = [];
+    rows.forEach((row, rowIdx) => {
+        const rowInputs = row.querySelectorAll('input.excel-input, select.excel-input');
+        rowInputs.forEach(input => {
+            inputs.push({ row: rowIdx, input: input, field: input.dataset.field });
+        });
+    });
+    return inputs;
+}
+
+function moveCategoryFocus(tableBodyId, currentInput, direction) {
+    const allInputs = getCategoryGridInputs(tableBodyId);
+    const currentIdx = allInputs.findIndex(i => i.input === currentInput);
+    if (currentIdx === -1) return;
+
+    let targetIdx = currentIdx;
+    // Determine number of columns based on table
+    let numCols = 2; // default for categories
+    if (tableBodyId === 'subcategoriesBody') numCols = 3;
+    else if (tableBodyId === 'variationTypesBody') numCols = 2;
+    else if (tableBodyId === 'variationOptionsBody') numCols = 3;
+
+    if (direction === 'right') {
+        targetIdx = currentIdx + 1;
+    } else if (direction === 'left') {
+        targetIdx = currentIdx - 1;
+    } else if (direction === 'down') {
+        targetIdx = currentIdx + numCols;
+    } else if (direction === 'up') {
+        targetIdx = currentIdx - numCols;
+    }
+
+    if (targetIdx >= 0 && targetIdx < allInputs.length) {
+        allInputs[targetIdx].input.focus();
+        if (allInputs[targetIdx].input.tagName === 'INPUT') {
+            allInputs[targetIdx].input.select();
+        }
+    }
+}
+
+function setupCategoryKeyNavigation() {
+    document.addEventListener('keydown', (e) => {
+        const input = e.target;
+        if (!input.classList.contains('excel-input')) return;
+
+        const row = input.closest('.excel-tr');
+        if (!row) return;
+
+        // Determine which table we're in
+        const tbody = input.closest('tbody');
+        const tableBodyId = tbody ? tbody.id : null;
+
+        // Skip if not a known table
+        if (!tableBodyId || !['categoriesBody', 'subcategoriesBody', 'variationTypesBody', 'variationOptionsBody'].includes(tableBodyId)) return;
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            moveCategoryFocus(tableBodyId, input, 'right');
+        } else if (e.key === 'ArrowRight') {
+            const selStart = input.selectionStart;
+            const val = input.value;
+            if (selStart === val.length) {
+                e.preventDefault();
+                moveCategoryFocus(tableBodyId, input, 'right');
+            }
+        } else if (e.key === 'ArrowLeft') {
+            const selStart = input.selectionStart;
+            if (selStart === 0) {
+                e.preventDefault();
+                moveCategoryFocus(tableBodyId, input, 'left');
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            moveCategoryFocus(tableBodyId, input, 'down');
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            moveCategoryFocus(tableBodyId, input, 'up');
+        }
+    });
+}
+
+// Initialize category key navigation
+setupCategoryKeyNavigation();
+
+// --- Custom Dropdown Functions ---
+let ddOpen = false;
+let ddCurrentInput = null;
+let ddOptions = [];
+let ddSelectedIndex = -1;
+
+function getDdMenu() {
+    return document.getElementById('gridDdMenu');
+}
+
+window.showCategoryDropdown = function (inputEl) {
+    const ddMenu = getDdMenu();
+    if (!ddMenu) return;
+
+    ddCurrentInput = inputEl;
+    ddOptions = window.categoriesData.map(c => ({ id: c.id, name: c.name }));
+
+    if (ddOptions.length === 0) return;
+
+    const rect = inputEl.getBoundingClientRect();
+    ddMenu.style.width = Math.max(rect.width, 150) + 'px';
+    ddMenu.style.left = rect.left + 'px';
+    ddMenu.style.top = (rect.bottom + window.scrollY) + 'px';
+
+    ddMenu.innerHTML = ddOptions.map((opt, idx) =>
+        `<div class="grid-dropdown-item" data-id="${opt.id}" data-name="${window.escapeHtml(opt.name)}" data-idx="${idx}">${window.escapeHtml(opt.name)}</div>`
+    ).join('');
+
+    ddMenu.classList.remove('hidden');
+    ddOpen = true;
+    ddSelectedIndex = -1;
+};
+
+window.showVariationTypeDropdown = function (inputEl) {
+    const ddMenu = getDdMenu();
+    if (!ddMenu) return;
+
+    ddCurrentInput = inputEl;
+    ddOptions = window.variationTypesData.map(t => ({ id: t.id, name: t.name }));
+
+    if (ddOptions.length === 0) return;
+
+    const rect = inputEl.getBoundingClientRect();
+    ddMenu.style.width = Math.max(rect.width, 150) + 'px';
+    ddMenu.style.left = rect.left + 'px';
+    ddMenu.style.top = (rect.bottom + window.scrollY) + 'px';
+
+    ddMenu.innerHTML = ddOptions.map((opt, idx) =>
+        `<div class="grid-dropdown-item" data-id="${opt.id}" data-name="${window.escapeHtml(opt.name)}" data-idx="${idx}">${window.escapeHtml(opt.name)}</div>`
+    ).join('');
+
+    ddMenu.classList.remove('hidden');
+    ddOpen = true;
+    ddSelectedIndex = -1;
+};
+
+function hideDd() {
+    const ddMenu = getDdMenu();
+    if (ddMenu) ddMenu.classList.add('hidden');
+    ddOpen = false;
+    ddCurrentInput = null;
+    ddOptions = [];
+    ddSelectedIndex = -1;
+}
+
+function highlightDdItem(idx) {
+    const ddMenu = getDdMenu();
+    if (!ddMenu) return;
+    const items = ddMenu.querySelectorAll('.grid-dropdown-item');
+    items.forEach((item, i) => {
+        item.classList.toggle('highlighted', i === idx);
+    });
+    ddSelectedIndex = idx;
+    if (items[idx]) {
+        items[idx].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function selectDdItem() {
+    if (!ddCurrentInput || ddSelectedIndex < 0) return;
+    const ddMenu = getDdMenu();
+    if (!ddMenu) return;
+
+    const items = ddMenu.querySelectorAll('.grid-dropdown-item');
+    if (items[ddSelectedIndex]) {
+        const item = items[ddSelectedIndex];
+        ddCurrentInput.value = item.dataset.name;
+        ddCurrentInput.dataset.value = item.dataset.id;
+
+        // Mark as modified
+        const field = ddCurrentInput.dataset.field;
+        const row = parseInt(ddCurrentInput.dataset.row);
+        if (field === 'category_id') {
+            window.subcategoriesData[row].category_id = item.dataset.id;
+            window.modifiedSubcategories.add(window.subcategoriesData[row].id);
+        } else if (field === 'variation_type_id') {
+            window.variationOptionsData[row].variation_type_id = item.dataset.id;
+            window.modifiedVariationOptions.add(window.variationOptionsData[row].id);
+        }
+
+        hideDd();
+    }
+}
+
+// Dropdown click handling
+document.addEventListener('click', (e) => {
+    const ddMenu = getDdMenu();
+    if (!ddMenu) return;
+
+    const item = e.target.closest('.grid-dropdown-item');
+    if (item) {
+        const idx = parseInt(item.dataset.idx);
+        ddSelectedIndex = idx;
+        selectDdItem();
+    }
+});
+
+// Click outside to close
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown-cell') && !e.target.closest('#gridDdMenu')) {
+        hideDd();
+    }
+});
+
+// Keyboard navigation for dropdowns
+document.addEventListener('keydown', (e) => {
+    if (!ddOpen) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlightDdItem(Math.min(ddSelectedIndex + 1, ddOptions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlightDdItem(Math.max(ddSelectedIndex - 1, 0));
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        selectDdItem();
+    } else if (e.key === 'Escape') {
+        hideDd();
+    } else if (e.key === 'Tab') {
+        hideDd();
+    }
+});

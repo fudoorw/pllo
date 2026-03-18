@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flexible Business Spreadsheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* Synchronized with dashboard styles.css */
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: transparent;
+            /* Seamless iframe integration */
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+
+        .sheet-container {
+            padding: 0;
+            /* Fully flush for iframe */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        /* The Grid - Fitted to width */
+        .sheet-wrapper {
+            flex: 1;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 0.8rem 0.5rem;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            min-height: 40px;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        /* Interaction Elements */
+        .cell-container {
+            width: 100%;
+            height: 100%;
+            min-height: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            transition: all 0.2s ease;
+        }
+
+        .cell-input {
+            flex: 1;
+            min-width: 20px;
+            height: 32px;
+            padding: 0 4px;
+            border: none;
+            outline: none;
+            font-size: 0.875rem;
+            background: transparent;
+            color: inherit;
+            width: 100%;
+        }
+
+        .cell-container:focus-within {
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: inset 0 0 0 1px var(--primary);
+            z-index: 10;
+        }
+
+        .readonly {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+        }
+
+        .resizer {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            z-index: 60;
+            transition: background 0.2s;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .resizer:hover {
+            background: var(--primary);
+            width: 6px;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            max-height: 250px;
+            overflow-y: auto;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .dropdown-item {
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .row-idx {
+            background: var(--bg-secondary);
+            text-align: center;
+            width: 40px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            position: sticky;
+            left: 0;
+            z-index: 45;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .status-bar {
+            height: 28px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            justify-content: space-between;
+        }
+
+        /* === Checkbox Column === */
+        .check-col {
+            width: 40px;
+            text-align: center;
+            position: sticky;
+            left: 0;
+            background: var(--bg-secondary);
+            z-index: 55;
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* Shift index column when checkbox is present */
+        .row-idx {
+            left: 40px;
+        }
+
+        .checkbox-container {
+            display: block;
+            position: relative;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            user-select: none;
+            margin: 0 auto;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+            z-index: -1;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 18px;
+            width: 18px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container:hover input~.checkmark {
+            background-color: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-light);
+        }
+
+        .checkbox-container input:checked~.checkmark {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .checkbox-container input:checked~.checkmark:after {
+            display: block;
+        }
+
+        .checkbox-container .checkmark:after {
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* === Touch Optimization === */
+        .touch-locked-cell {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .touch-locked-cell input {
+            cursor: pointer;
+        }
+
+        .edit-active {
+            background: rgba(99, 102, 241, 0.1) !important;
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
+        @media (pointer: coarse) {
+            .resizer {
+                width: 10px;
+                right: -5px;
+            }
+        }
+    </style>
+</head>
+
+<body></body>
+<div class="sheet-container">
+    <div class="sheet-wrapper" id="gridWrapper">
+        <table id="gridTable">
+            <thead>
+                <tr id="gridHeader"></tr>
+            </thead>
+            <tbody id="gridBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="ddMenu" class="dropdown-menu"></div>
+
+<div class="status-bar">
+    <span id="activityLog">Full width enabled. Proportional column resizing optimized.</span>
+    <span id="selectionPath">Ready</span>
+</div>
+
+<script>
+    const SCHEMA = [
+        { id: 'code', label: 'Code', width: '10%' },
+        { id: 'barcode', label: 'Barcode', width: '12%' },
+        { id: 'desc', label: 'Description', width: '15%' },
+        { id: 'category', label: 'Category', width: '10%', type: 'dropdown', ref: 'categories' },
+        { id: 'subCategory', label: 'Sub Category', width: '10%', type: 'dropdown', ref: 'subcategories', parent: 'category' },
+        { id: 'brand_id', label: 'Brand', width: '10%', type: 'dropdown', ref: 'brands' },
+        { id: 'cost', label: 'Cost', width: '7%' },
+        { id: 'prices', label: 'Price', width: '8%' },
+        { id: 'unit', label: 'Unit', width: '8%', type: 'dropdown', ref: 'units' },
+        { id: 'qty', label: 'Stock', width: '6%' },
+        { id: 'margin', label: 'Margin %', width: '6%', readonly: true }
+    ];
+
+    let references = {
+        categories: [],
+        subcategories: [],
+        brands: [],
+        units: []
+    };
+
+    function getMaxItemCode() {
+        let max = 0;
+        state.data.forEach(row => {
+            const bc = String(row.code || '');
+            if (/^\d+$/.test(bc)) {
+                const val = parseInt(bc);
+                if (val > max) max = val;
+            }
+        });
+        return max;
+    }
+
+    function getDisplayName(colId, val) {
+        if (!val) return '';
+        const colDef = SCHEMA.find(c => c.id === colId);
+        if (!colDef || !colDef.ref || !references[colDef.ref]) return val;
+        const ref = references[colDef.ref].find(r => r.id === val || r.name === val || r.short_name === val);
+        if (ref) {
+            if (colDef.ref === 'units') return ref.short_name || ref.name;
+            return ref.name;
+        }
+        return val;
+    }
+
+
+    const COLUMN_ACTIONS = {
+        'prices': (idx) => updateMargin(idx),
+        'cost': (idx) => updateMargin(idx),
+        'category': (idx) => {
+            state.data[idx].subCategory = '';
+            const rows = document.getElementById('gridBody').children;
+            const subCatColIdx = state.columns.findIndex(c => c.id === 'subCategory') + 2;
+            const input = rows[idx].children[subCatColIdx] ? rows[idx].children[subCatColIdx].querySelector('input') : null;
+            if (input) input.value = '';
+            notifyUpdate(idx, 'subCategory', '');
+        }
+    };
+
+    let state = {
+        data: [],
+        columns: SCHEMA,
+        selectedRows: new Set()
+    };
+
+    function initGrid() {
+        renderHeader();
+        renderBody();
+        setupResizers();
+        setupTouchEvents();
+    }
+
+    function renderHeader() {
+        const head = document.getElementById('gridHeader');
+        head.innerHTML = `
+                <th class="check-col">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="masterCheckbox" onchange="toggleAll(this)">
+                        <span class="checkmark"></span>
+                    </label>
+                </th>
+                <th class="row-idx" style="left: 40px;">#</th>
+            `;
+        state.columns.forEach((col, i) => {
+            const th = document.createElement('th');
+            th.style.width = col.width;
+            th.innerHTML = `
+                    <div class="relative px-1 py-2 truncate text-left">
+                        ${col.label}
+                        <div class="resizer" data-idx="${i}"></div>
+                    </div>
+                `;
+            head.appendChild(th);
+        });
+    }
+
+    function renderBody() {
+        const body = document.getElementById('gridBody');
+        body.innerHTML = '';
+        state.data.forEach((row, rIdx) => {
+            const tr = document.createElement('tr');
+            tr.dataset.row = rIdx;
+            const isSelected = state.selectedRows.has(String(row.id));
+            if (isSelected) tr.style.background = 'rgba(99, 102, 241, 0.1)';
+            tr.innerHTML = `
+                    <td class="check-col">
+                        <label class="checkbox-container">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelection('${row.id}', ${rIdx})">
+                            <span class="checkmark"></span>
+                        </label>
+                    </td>
+                    <td class="row-idx" style="left: 40px;">${rIdx + 1}</td>
+                `;
+            state.columns.forEach(col => {
+                const td = document.createElement('td');
+                const container = document.createElement('div');
+                container.className = `cell-container ${col.id} ${col.readonly ? 'readonly' : ''} touch-locked-cell`;
+                const input = document.createElement('input');
+                input.className = 'cell-input';
+                input.value = getDisplayName(col.id, row[col.id]);
+                input.readOnly = true;
+                if (col.readonly) input.dataset.permReadonly = "true";
+
+                // Item Code Hint for New Items
+                if (col.id === 'code' && row.isNew && !row.code) {
+                    const lastCode = getMaxItemCode();
+                    if (lastCode > 0) input.placeholder = `Last: ${lastCode}`;
+                }
+
+                input.dataset.row = rIdx;
+                input.dataset.col = col.id;
+                input.oninput = (e) => handleInput(rIdx, col.id, e.target.value);
+                input.onblur = (e) => {
+                    if (!input.dataset.permReadonly) {
+                        input.readOnly = true;
+                        container.classList.remove('edit-active');
+                    }
+                };
+                input.onfocus = () => handleFocus(rIdx, col.id);
+                input.onclick = () => enterEditMode(container);
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); moveFocus(rIdx, col.id, 'right'); }
+                    else handleArrowNavigation(e, rIdx, col.id);
+                };
+                container.appendChild(input);
+                td.appendChild(container);
+                tr.appendChild(td);
+            });
+            body.appendChild(tr);
+        });
+    }
+
+    function moveFocus(rowIdx, colId, direction) {
+        const colIdx = state.columns.findIndex(c => c.id === colId);
+        if (direction === 'right' && colIdx < state.columns.length - 1) focusCell(rowIdx, state.columns[colIdx + 1].id);
+        else if (direction === 'left' && colIdx > 0) focusCell(rowIdx, state.columns[colIdx - 1].id);
+        else if (direction === 'down' && rowIdx < state.data.length - 1) focusCell(rowIdx + 1, colId);
+        else if (direction === 'up' && rowIdx > 0) focusCell(rowIdx - 1, colId);
+    }
+
+    function handleArrowNavigation(e, rowIdx, colId) {
+        const menu = document.getElementById('ddMenu');
+        if (menu && menu.style.display === 'block') return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); moveFocus(rowIdx, colId, 'right'); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); moveFocus(rowIdx, colId, 'left'); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); moveFocus(rowIdx, colId, 'down'); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(rowIdx, colId, 'up'); }
+    }
+
+    function focusCell(rowIdx, colId) {
+        setTimeout(() => {
+            const rows = document.getElementById('gridBody').children;
+            const colIdx = state.columns.findIndex(c => c.id === colId);
+            if (rows[rowIdx] && rows[rowIdx].children[colIdx + 2]) {
+                const input = rows[rowIdx].children[colIdx + 2].querySelector('input');
+                if (input) { input.focus(); if (input.select) input.select(); }
+            }
+        }, 10);
+    }
+
+    window.addEventListener('message', function (event) {
+        const { type, data } = event.data;
+        if (type === 'LOAD_DATA') {
+            if (event.data.references) references = event.data.references;
+            if (!data || !Array.isArray(data)) { state.data = []; renderBody(); return; }
+            state.data = data.map(p => {
+                const cost = parseFloat(p.cost) || 0;
+                const price = parseFloat(p.price) || 0;
+                return {
+                    id: p.id,
+                    isNew: p.isNew || false,
+                    code: Array.isArray(p.code) ? p.code[0] : (p.code || ''),
+                    barcode: Array.isArray(p.barcodes) ? p.barcodes[0] : (p.barcodes || ''),
+                    desc: p.name || '',
+                    category: p.category_id || '',
+                    subCategory: p.subcategory_id || '',
+                    cost: p.cost || 0,
+                    prices: p.price || 0,
+                    unit: p.unit_id || '',
+                    qty: p.stock || 0,
+                    brand_id: p.brand_id || '',
+                    margin: price > 0 ? (((price - cost) / price) * 100).toFixed(1) + '%' : '-'
+                };
+            });
+            renderBody();
+        } else if (type === 'IMPORT_DATA') {
+            if (!data || !Array.isArray(data)) { state.data = []; renderBody(); return; }
+            state.data = data.map(p => {
+                const cost = parseFloat(p.cost) || 0;
+                const price = parseFloat(p.prices) || 0;
+                return { ...p, margin: price > 0 ? (((price - cost) / price) * 100).toFixed(1) + '%' : '-' };
+            });
+            renderBody();
+        } else if (type === 'EXPORT_REQUEST') {
+            const exportData = state.data.map(row => ({
+                ...row,
+                category: getDisplayName('category', row.category),
+                subCategory: getDisplayName('subCategory', row.subCategory),
+                brand_id: getDisplayName('brand_id', row.brand_id),
+                unit: getDisplayName('unit', row.unit)
+            }));
+            window.parent.postMessage({ type: 'EXPORT_DATA', data: exportData }, '*');
+        } else if (type === 'FOCUS_CELL') {
+            focusCell(data.rowIdx, data.colId);
+        }
+    });
+
+    function notifyUpdate(rowIdx, colId, value) {
+        window.parent.postMessage({ type: 'CELL_UPDATE', rowIdx, colId, value, rowData: state.data[rowIdx] }, '*');
+    }
+
+    function handleInput(rowIdx, colId, val) {
+        state.data[rowIdx][colId] = val;
+        if (COLUMN_ACTIONS[colId]) COLUMN_ACTIONS[colId](rowIdx);
+        notifyUpdate(rowIdx, colId, val);
+        const rows = document.getElementById('gridBody').children;
+        const colIdx = state.columns.findIndex(c => c.id === colId) + 2;
+        const input = rows[rowIdx].children[colIdx].querySelector('input');
+        if (input) input.value = getDisplayName(colId, val);
+    }
+
+    function updateMargin(rowIdx) {
+        const row = state.data[rowIdx];
+        const cost = parseFloat(row.cost) || 0;
+        const price = parseFloat(row.prices) || 0;
+        row.margin = price > 0 ? (((price - cost) / price) * 100).toFixed(1) + '%' : '-';
+        const rows = document.getElementById('gridBody').children;
+        const targetTdIdx = state.columns.findIndex(c => c.id === 'margin') + 2;
+        const input = rows[rowIdx].children[targetTdIdx].querySelector('input');
+        if (input) input.value = row.margin;
+        notifyUpdate(rowIdx, 'margin', row.margin);
+    }
+
+    function handleFocus(rowIdx, colId) {
+        document.getElementById('selectionPath').textContent = `Active: ${colId.toUpperCase()} [Row ${rowIdx + 1}]`;
+        const container = document.activeElement.closest('.cell-container');
+        if (container) enterEditMode(container);
+        const colDef = state.columns.find(c => c.id === colId);
+        if (colDef.type === 'dropdown') showDropdown(rowIdx, colId);
+        else hideDropdown();
+    }
+
+    function showDropdown(rowIdx, colId) {
+        const menu = document.getElementById('ddMenu');
+        const input = document.activeElement;
+        const rect = input.getBoundingClientRect();
+        const colDef = state.columns.find(c => c.id === colId);
+        let options = [];
+        if (colDef.ref && references[colDef.ref]) {
+            const rawRefs = references[colDef.ref];
+            if (colDef.id === 'subCategory' && colDef.parent) {
+                const parentVal = state.data[rowIdx][colDef.parent];
+                options = rawRefs.filter(s => s.category_id === parentVal).map(s => ({ id: s.id, name: s.name }));
+            } else if (colDef.ref === 'units') {
+                options = rawRefs.map(r => ({ id: r.id, name: r.short_name || r.name || r }));
+            } else {
+                options = rawRefs.map(r => ({ id: r.id, name: r.name || r }));
+            }
+        } else if (colDef.options) {
+            options = colDef.options.map(o => ({ id: o, name: o }));
+        }
+        if (options.length === 0) return hideDropdown();
+        menu.innerHTML = options.map((opt, idx) => `<div class="dropdown-item" data-id="${opt.id}" data-idx="${idx}">${opt.name}</div>`).join('');
+        menu.style.display = 'block';
+        menu.style.width = Math.max(rect.width, 150) + 'px';
+        menu.style.left = rect.left + 'px';
+        menu.style.top = (rect.bottom + window.scrollY) + 'px';
+
+        let selectedIndex = -1;
+        const items = menu.querySelectorAll('.dropdown-item');
+        function highlightItem(idx) {
+            items.forEach((item, i) => {
+                item.style.background = i === idx ? 'var(--primary)' : '';
+                item.style.color = i === idx ? 'white' : '';
+            });
+            selectedIndex = idx;
+        }
+
+        input.onkeydown = (e) => {
+            if (menu.style.display !== 'block') return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); highlightItem(Math.min(selectedIndex + 1, items.length - 1)); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); highlightItem(Math.max(selectedIndex - 1, 0)); }
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0) {
+                    const item = items[selectedIndex];
+                    input.value = item.textContent;
+                    handleInput(rowIdx, colId, item.dataset.id);
+                    hideDropdown();
+                    moveFocus(rowIdx, colId, 'right');
+                }
+            }
+        };
+
+        items.forEach(item => {
+            item.onmousedown = (e) => e.preventDefault();
+            item.onclick = () => {
+                input.value = item.textContent;
+                handleInput(rowIdx, colId, item.dataset.id);
+                hideDropdown();
+                moveFocus(rowIdx, colId, 'right');
+            };
+            item.onmouseenter = () => highlightItem(parseInt(item.dataset.idx));
+        });
+    }
+    function hideDropdown() { document.getElementById('ddMenu').style.display = 'none'; }
+
+    function toggleSelection(id, rowIdx) {
+        const idStr = String(id);
+        if (state.selectedRows.has(idStr)) state.selectedRows.delete(idStr);
+        else state.selectedRows.add(idStr);
+        renderBody();
+        updateMasterCheckbox();
+        notifySelectionChange();
+    }
+
+    function toggleAll(checkbox) {
+        if (checkbox.checked) state.data.forEach(row => state.selectedRows.add(String(row.id)));
+        else state.selectedRows.clear();
+        renderBody();
+        notifySelectionChange();
+    }
+
+    function updateMasterCheckbox() {
+        const master = document.getElementById('masterCheckbox');
+        if (!master) return;
+        const allSelected = state.data.length > 0 && state.data.every(row => state.selectedRows.has(String(row.id)));
+        master.checked = allSelected;
+        master.indeterminate = state.selectedRows.size > 0 && !allSelected;
+    }
+
+    function notifySelectionChange() {
+        window.parent.postMessage({ type: 'SELECTION_CHANGE', selectedIds: Array.from(state.selectedRows) }, '*');
+    }
+
+    function setupTouchEvents() {
+        let lastTap = 0; let lastTarget = null;
+        document.addEventListener('touchstart', (e) => { if (!e.target.closest('.cell-input') && !e.target.closest('.dropdown-menu')) document.activeElement.blur(); }, { passive: true });
+        document.getElementById('gridBody').addEventListener('touchstart', (e) => {
+            const container = e.target.closest('.cell-container');
+            if (!container) return;
+            const currentTime = new Date().getTime();
+            if (currentTime - lastTap < 500 && container === lastTarget) { e.preventDefault(); enterEditMode(container); }
+            lastTarget = container; lastTap = currentTime;
+        });
+    }
+
+    function enterEditMode(container) {
+        const input = container.querySelector('.cell-input');
+        if (input && !input.dataset.permReadonly && input.readOnly) {
+            input.readOnly = false;
+            container.classList.add('edit-active');
+            input.focus();
+            if (input.select) input.select();
+        }
+    }
+
+    function setupResizers() {
+        const table = document.getElementById('gridTable');
+        document.querySelectorAll('.resizer').forEach(resizer => {
+            resizer.addEventListener('mousedown', initResize);
+            resizer.addEventListener('touchstart', initResize, { passive: false });
+            function initResize(e) {
+                if (e.type === 'mousedown') e.preventDefault();
+                if (e.type === 'touchstart') e.preventDefault();
+                const th = resizer.closest('th');
+                const nextTh = th.nextElementSibling;
+                if (!nextTh) return;
+                const startX = e.type === 'mousedown' ? e.pageX : e.touches[0].pageX;
+                const startWidth = th.offsetWidth;
+                const nextStartWidth = nextTh.offsetWidth;
+                const totalWidth = table.offsetWidth;
+                function onMove(me) {
+                    const curX = me.type === 'mousemove' ? me.pageX : me.touches[0].pageX;
+                    const diff = curX - startX;
+                    th.style.width = ((startWidth + diff) / totalWidth * 100) + '%';
+                    nextTh.style.width = ((nextStartWidth - diff) / totalWidth * 100) + '%';
+                }
+                function onEnd() {
+                    document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+                    document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
+                }
+                document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('touchend', onEnd);
+            }
+        });
+    }
+
+    window.onclick = (e) => { if (!e.target.classList.contains('cell-input')) hideDropdown(); };
+    initGrid();
+</script>
+</body>
+
+</html>

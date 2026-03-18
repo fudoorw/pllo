@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Voucher - Compact Pro</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            padding: 6px 16px !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            height: auto !important;
+            line-height: normal !important;
+            box-sizing: border-box !important;
+            text-transform: uppercase !important;
+        }
+
+        .btn-success {
+            background: #10b981 !important;
+            color: white !important;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9 !important;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: #f1f5f9 !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .btn-indigo {
+            background: var(--gradient-primary) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+        }
+
+        .btn-indigo:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: var(--shadow-glow) !important;
+        }
+
+        .btn-amber {
+            background: rgba(245, 158, 11, 0.1) !important;
+            color: #f59e0b !important;
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
+
+        .btn-amber:hover {
+            background: rgba(245, 158, 11, 0.2) !important;
+        }
+
+        .btn-slate {
+            background: #334155 !important;
+            color: white !important;
+        }
+
+        .btn-slate:hover {
+            background: #475569 !important;
+        }
+
+        .btn-danger {
+            background: #ef4444 !important;
+            color: white !important;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9 !important;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            padding: var(--space-md);
+        }
+
+        .glass-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .glass-input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Excel-Style Grid */
+        .table-container {
+            flex-grow: 1;
+            overflow: auto;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .table-header th {
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            z-index: 10;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.6rem 0.5rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        #itemsTable td {
+            border: 1px solid var(--border-color);
+            min-height: 36px;
+            padding: 0;
+        }
+
+        #itemsTable tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .cell-container {
+            width: 100%;
+            height: 100%;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            padding: 0 6px;
+            transition: all 0.2s ease;
+        }
+
+        .cell-container:focus-within {
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: inset 0 0 0 1px var(--primary);
+        }
+
+        .cell-input {
+            flex: 1;
+            min-width: 20px;
+            height: 28px;
+            padding: 0 4px;
+            border: none;
+            outline: none;
+            font-size: 0.7rem;
+            background: transparent;
+            color: inherit;
+            width: 100%;
+            border-radius: 4px;
+        }
+
+        .cell-input:focus {
+            background: transparent;
+        }
+
+        /* Custom Select Styling */
+        .cell-input.select-dropdown {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            padding-right: 28px;
+            cursor: pointer;
+        }
+
+        .cell-input.select-dropdown:focus {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23818cf8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+        }
+
+        .cell-input.select-dropdown option,
+        .glass-input option {
+            background: #1e293b !important;
+            color: #f1f5f9 !important;
+            padding: 8px;
+        }
+
+
+
+
+
+        .cell-input.readonly {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+        }
+
+        .row-idx {
+            background: var(--bg-secondary);
+            text-align: center;
+            width: 45px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            position: sticky;
+            left: 0;
+            z-index: 45;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .status-pill {
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .no-spinner::-webkit-inner-spin-button,
+        .no-spinner::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Custom Dropdown Styles */
+        .dropdown-menu {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            z-index: 9999;
+            max-height: 250px;
+            overflow-y: auto;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .dropdown-item {
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--primary);
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="text-[11px] h-screen flex flex-col">
+
+    <div class="max-w-[1600px] mx-auto w-full flex flex-col h-full space-y-2">
+
+        <!-- Top Toolbar -->
+        <div class="flex justify-between items-center px-1">
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <h1
+                        class="text-lg font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                        Purchase Voucher</h1>
+                    <span id="syncStatus"
+                        style="font-size: 9px; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">
+                        <i class="fas fa-circle text-[6px]"></i> Ready
+                    </span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <label class="font-bold text-[var(--text-muted)] uppercase text-[9px]">Load PO:</label>
+                        <input type="text" id="orderCodeInput" class="glass-input !w-32" placeholder="PO-XXXXX">
+                        <button onclick="loadOrderByCode()" class="btn btn-secondary !px-3">LOAD</button>
+                    </div>
+                    <button onclick="viewPendingOrders()" class="btn btn-amber">PENDING ORDERS</button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="font-bold text-[var(--text-muted)] uppercase text-[9px]">Order Date</label>
+                    <input type="date" id="voucherDate" class="glass-input !w-32">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="saveOrder(false)" id="btnSave" class="btn btn-slate">
+                    <i class="fas fa-save mr-2"></i>SAVE
+                </button>
+                <button onclick="saveOrder(true)" id="btnPrint" class="btn btn-indigo">
+                    <i class="fas fa-print mr-2"></i>SAVE & PRINT
+                </button>
+                <button onclick="window.location.reload()" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt mr-2"></i>RESET
+                </button>
+            </div>
+        </div>
+
+        <!-- Header Metadata Block -->
+        <div class="glass-card rounded-lg p-2 grid grid-cols-5 gap-2">
+            <div class="space-y-1">
+                <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Voucher Number</label>
+                <input type="text" id="referenceNo" class="glass-input" placeholder="PV-XXXXX">
+            </div>
+            <div class="space-y-1 relative">
+                <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Supplier</label>
+                <input type="text" id="supplierSearch" class="glass-input" placeholder="Select Supplier"
+                    onclick="showDropdown(this, 'suppliers')" onfocus="this.click()" readonly>
+                <input type="hidden" id="supplierId">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Store / Warehouse</label>
+                <input type="text" id="warehouseSearch" class="glass-input" placeholder="Select Store"
+                    onclick="showDropdown(this, 'warehouses')" onfocus="this.click()" readonly>
+                <input type="hidden" id="warehouseId">
+            </div>
+            <div class="space-y-1 relative">
+                <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Payment Method</label>
+                <input type="text" id="headerPaymentTypeSearch" class="glass-input" placeholder="Select Method"
+                    onclick="showDropdown(this, 'headerPaymentTypes')" onfocus="this.click()" readonly>
+                <input type="hidden" id="headerPaymentType" value="Cash">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Payment Status</label>
+                <select id="purchaseStatus" class="glass-input cursor-pointer" onchange="this.dataset.manuallySet=true">
+                    <option value="Unpaid">Unpaid</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Paid">Paid</option>
+                </select>
+            </div>
+        </div>
+
+
+        <!-- Main Table Area -->
+        <div class="table-container">
+            <table class="w-full border-collapse" id="itemsTable">
+                <thead class="table-header">
+                    <tr class="text-left text-[9px] uppercase text-[var(--text-muted)] tracking-wider">
+                        <th class="w-8 text-center px-1">No</th>
+                        <th class="w-32 px-1">Item Code</th>
+                        <th class="w-32 px-1">Barcode</th>
+                        <th class="px-1">Description</th>
+                        <th class="w-16 text-center px-1">QTY</th>
+                        <th class="w-16 text-center px-1">Unit</th>
+                        <th class="w-24 text-right px-1">Unit Cost</th>
+                        <th class="w-24 text-right whitespace-nowrap px-1">Discount %</th>
+                        <th class="w-24 text-right px-1">Amount</th>
+                        <th class="w-48 px-1">Status / Remark</th>
+                        <th class="w-8"></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="divide-y divide-white/5">
+                    <!-- Rows injected here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quick Add Row -->
+        <div class="px-1 flex justify-between items-center">
+            <button onclick="addRow(true)"
+                class="text-[var(--primary)] hover:text-white font-bold text-[9px] uppercase flex items-center gap-1 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                ADD NEW ITEM
+            </button>
+        </div>
+
+        <!-- Footer / Totals Section -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <!-- Footer Inputs -->
+            <div class="glass-card rounded-lg p-2 grid grid-cols-2 gap-2 col-span-3">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Purchase Tax (%)</label>
+                    <input type="number" id="taxPercent" oninput="calculateTotals()" value="0"
+                        class="glass-input no-spinner" placeholder="0">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Discount (%)</label>
+                    <input type="number" id="overallDiscount" oninput="calculateTotals()" value="0"
+                        class="glass-input no-spinner" placeholder="0">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Shipping Cost</label>
+                    <input type="number" id="shipping" oninput="calculateTotals()" value="0"
+                        class="glass-input no-spinner" placeholder="0">
+                </div>
+                <div class="space-y-1 relative">
+                    <label class="text-[9px] font-bold uppercase text-[var(--text-muted)] flex justify-between">
+                        Paid Amount
+                        <span id="remainBadge" class="text-[var(--warning-alert)] text-[9px] font-bold hidden">Rem:
+                            0</span>
+                    </label>
+                    <input type="number" id="paidAmount" oninput="calculateTotals()" value="0"
+                        class="glass-input text-[var(--success-green)] font-bold no-spinner" placeholder="0">
+                </div>
+
+                <!-- New: Order Tax Code -->
+                <div class="space-y-1 relative">
+                    <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">Purchase Tax Code</label>
+                    <input type="text" id="taxCodeSearch" class="glass-input" value="Non-Taxable"
+                        onclick="showDropdown(this, 'taxCodes')" onfocus="this.click()" readonly>
+                    <input type="hidden" id="taxCode" value="0">
+                </div>
+
+                <!-- E-Wallet Dropdown -->
+                <div class="space-y-1 relative">
+                    <label class="text-[9px] font-bold uppercase text-[var(--text-muted)]">E-Wallet (Optional)</label>
+                    <input type="text" id="footerPaymentTypeSearch" class="glass-input" placeholder="Select Wallet"
+                        onclick="showDropdown(this, 'footerPaymentTypes')" onfocus="this.click()" readonly>
+                    <input type="hidden" id="footerPaymentType" value="None">
+                </div>
+
+                <!-- Long Remark Bar -->
+                <div class="col-span-2 flex items-center gap-3">
+                    <label class="text-[9px] font-bold uppercase text-[var(--text-muted)] whitespace-nowrap">Notes /
+                        Remarks</label>
+                    <input type="text" id="orderNote"
+                        class="glass-input !rounded-none border-x-0 border-t-0 border-b border-white/20 bg-transparent focus:bg-white/5"
+                        placeholder="Enter general notes for this purchase order...">
+                </div>
+            </div>
+
+            <!-- Summary Table -->
+            <div class="glass-card rounded-lg p-2 space-y-1 overflow-hidden flex flex-col justify-center">
+                <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-[var(--text-muted)] uppercase font-bold text-[8px]">Items Subtotal</span>
+                    <span id="displaySubTotal" class="font-bold">0</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-[var(--text-muted)] uppercase font-bold text-[8px]">Purchase Tax</span>
+                    <span id="displayTax" class="text-right">0</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-[var(--warning-alert)] uppercase font-bold text-[8px]">Discount</span>
+                    <span id="displayDiscount" class="text-right">-0</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-[var(--text-muted)] uppercase font-bold text-[8px]">Shipping</span>
+                    <span id="displayShipping" class="text-right">0</span>
+                </div>
+                <div class="mt-2 text-[var(--primary)] flex flex-col items-end">
+                    <span class="uppercase font-black text-[9px] mb-1">Total Payable</span>
+                    <div id="displayNet" class="text-2xl font-black leading-none">0</div>
+                </div>
+                <div class="pt-2 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-[var(--warning-alert)] uppercase font-bold text-[8px]">Due Balance</span>
+                    <span id="remainAmount" class="font-bold text-[var(--warning-alert)]">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Dropdown Menu -->
+    <div id="ddMenu" class="dropdown-menu"></div>
+    <div id="productSearchMenu" class="dropdown-menu" style="display:none;"></div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/datepicker-init.js"></script>
+
+
+
+    <script>
+        let items = [];
+        let suppliers = [];
+        let warehouses = [];
+        let productsMap = new Map(); // For quick lookup
+        let productsMapById = new Map();
+        let units = [];
+        function applyGlobalStatus(status) {
+            // Deprecated: Statuses are now per-item in Remark column
+        }
+
+        const unitsMap = new Map();
+        let productsArray = [];
+        let currentUser = null;
+        let loadedOrderId = null;
+
+        window.onload = () => {
+            setTimeout(async () => {
+                await initData();
+
+                // NEW: Handle URL ID for editing
+                const urlParams = new URLSearchParams(window.location.search);
+                const editId = urlParams.get('id');
+                if (editId) {
+                    await loadOrderById(editId);
+                } else {
+                    document.getElementById('voucherDate').value = new Date().toISOString().split('T')[0];
+                    await generatePVNumber();
+                    addRow(false); // Start with one empty row
+                    renderTable();
+                }
+            }, 150);
+        };
+
+
+        async function generatePVNumber() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = String(now.getFullYear()).slice(-2);
+            const dateStr = `${day}${month}${year}`;
+
+            const prefix = `PV-${dateStr}-`;
+
+            // Fetch last PV number for today - get all for today to be safe
+            const { data: orders, error } = await supabase
+                .from('purchases')
+                .select('reference_no')
+                .ilike('reference_no', `${prefix}%`)
+                .order('reference_no', { ascending: false });
+
+            let nextNum = 1;
+            if (orders && orders.length > 0) {
+                // Find the highest number
+                orders.forEach(o => {
+                    const num = parseInt(o.reference_no?.replace(prefix, '') || '0');
+                    if (num >= nextNum) nextNum = num + 1;
+                });
+            }
+
+            // Final check - ensure no duplicate
+            let code = '';
+            let isDuplicate = true;
+            while (isDuplicate) {
+                code = `${prefix}${String(nextNum).padStart(4, '0')}`;
+                const exists = orders?.some(o => o.reference_no === code);
+                if (!exists) {
+                    isDuplicate = false;
+                } else {
+                    nextNum++;
+                }
+            }
+
+            document.getElementById('referenceNo').value = code;
+            return code;
+        }
+
+        async function loadOrderById(id) {
+            try {
+                updateSyncStatus('Loading order...', 'warning');
+                const { data: order, error } = await supabase
+                    .from('purchases')
+                    .select('*, purchase_items(*)')
+                    .eq('id', id)
+                    .single();
+
+                if (error || !order) throw error || new Error('Order not found');
+
+                // Populate form
+                loadedOrderId = order.id;
+                document.getElementById('voucherDate').value = order.date;
+                document.getElementById('referenceNo').value = order.reference_no || '';
+                document.getElementById('supplierId').value = order.supplier_id;
+                const sup = suppliers.find(s => s.id === order.supplier_id);
+                if (sup) document.getElementById('supplierSearch').value = sup.name;
+
+                document.getElementById('warehouseId').value = order.warehouse_id;
+                const wh = warehouses.find(w => w.id === order.warehouse_id);
+                if (wh) document.getElementById('warehouseSearch').value = wh.name;
+
+                const pt = order.payment_type || 'Cash';
+                document.getElementById('footerPaymentType').value = pt;
+                document.getElementById('footerPaymentTypeSearch').value = pt;
+
+                const tc = order.tax_code || '0';
+                document.getElementById('taxCode').value = tc;
+                document.getElementById('taxCodeSearch').value = tc === '7' ? 'Standard GST (7%)' : 'Non-Taxable';
+
+                document.getElementById('taxPercent').value = order.order_tax_percentage || 0;
+                document.getElementById('overallDiscount').value = order.discount_amount ? (order.discount_amount / (order.grand_total - order.order_tax_amount - order.shipping_amount + order.discount_amount) * 100).toFixed(2) : 0;
+                document.getElementById('shipping').value = order.shipping_amount || 0;
+                document.getElementById('paidAmount').value = order.paid_amount || 0;
+                document.getElementById('orderNote').value = order.note || '';
+
+                // Load items
+                items = order.purchase_items.map(item => {
+                    const p = productsMapById.get(item.product_id);
+                    return {
+                        product_id: item.product_id,
+                        barcode: p?.barcodes?.[0] || '',
+                        itemCode: p?.code || '',
+                        description: p?.name || '',
+                        qty: item.quantity,
+                        unit: item.unit || 'PCS',
+                        unitId: item.unit_id || null,
+                        cost: item.unit_cost,
+                        discount: item.discount_percentage || 0,
+                        amount: item.subtotal,
+                        remark: item.remark || '',
+                        item_status: item.item_status || 'Normal',
+                        originalCost: p?.cost || 0,
+                        isPreview: false
+                    };
+                });
+
+                renderTable();
+                calculateTotals();
+                updateSyncStatus('Order Loaded', 'success');
+            } catch (err) {
+                console.error('Load error:', err);
+                alert('Failed to load order for editing.');
+                updateSyncStatus('Load Failed', 'error');
+            }
+        }
+
+
+        // Initial Load
+        async function initData() {
+            try {
+                updateSyncStatus('Syncing...', 'warning');
+
+                // 1. Fetch Suppliers
+                const { data: supData } = await supabase.from('suppliers').select('id, name');
+                suppliers = supData || [];
+
+                // 2. Fetch Warehouses
+                const { data: whData } = await supabase.from('warehouses').select('id, name');
+                warehouses = whData || [];
+
+                // 3. Fetch Units
+                const { data: unitData } = await supabase.from('units').select('id, name');
+                units = unitData || [];
+                units.forEach(u => unitsMap.set(u.id, u.name));
+
+                // 4. Fetch Products for lookup (paginated to handle 8k+ products)
+                let allProdData = [];
+                let prodFrom = 0;
+                const prodStep = 1000;
+                while (true) {
+                    const { data: chunk, error: prodErr } = await supabase
+                        .from('products')
+                        .select('id, code, barcodes, name, cost, unit, unit_id, pcs_per_box')
+                        .range(prodFrom, prodFrom + prodStep - 1);
+                    if (prodErr) { console.error('Product fetch error:', prodErr); break; }
+                    if (!chunk || chunk.length === 0) break;
+                    allProdData = allProdData.concat(chunk);
+                    if (chunk.length < prodStep) break;
+                    prodFrom += prodStep;
+                }
+                productsArray = allProdData;
+                allProdData.forEach(p => {
+                    productsMapById.set(p.id, p);
+                    if (p.code) productsMap.set(p.code.toLowerCase(), p);
+                    p.barcodes?.forEach(b => productsMap.set(b.toLowerCase(), p));
+                });
+
+                // 4. Fetch current user
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) currentUser = user;
+
+                // 5. Style for preview text
+                const style = document.createElement('style');
+                style.innerHTML = `
+                .preview-text {
+                    color: rgba(255, 255, 255, 0.4) !important;
+                font-style: italic;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                updateSyncStatus('Ready', 'success');
+            } catch (err) {
+                console.error("Init Error:", err);
+                updateSyncStatus('Offline', 'error');
+            }
+        }
+
+
+        function showDropdown(input, type) {
+            const menu = document.getElementById('ddMenu');
+            const rect = input.getBoundingClientRect();
+
+            let options = [];
+            if (type === 'suppliers') {
+                options = suppliers.map(s => ({ id: s.id, name: s.name }));
+            } else if (type === 'warehouses') {
+                options = warehouses.map(w => ({ id: w.id, name: w.name }));
+            } else if (type === 'headerPaymentTypes') {
+                options = [
+                    { id: 'Cash', name: 'Cash' },
+                    { id: 'Credit', name: 'Credit' },
+                    { id: 'Consignment', name: 'Consignment' },
+                    { id: 'Card', name: 'Card' }
+                ];
+            } else if (type === 'footerPaymentTypes') {
+                options = [
+                    { id: 'None', name: 'None' },
+                    { id: 'KBZ Pay', name: 'KBZ Pay' },
+                    { id: 'Wave Pay', name: 'Wave Pay' }
+                ];
+            } else if (type === 'paymentTypes') {
+                options = [
+                    { id: 'Cash', name: 'Cash' },
+                    { id: 'Credit', name: 'Credit' },
+                    { id: 'KBZ Pay', name: 'KBZ Pay' },
+                    { id: 'Wave Pay', name: 'Wave Pay' },
+                    { id: 'Consignment', name: 'Consignment' }
+                ];
+            } else if (type === 'taxCodes') {
+                options = [
+                    { id: '0', name: 'Non-Taxable' },
+                    { id: '7', name: 'Standard GST (7%)' }
+                ];
+            }
+
+            if (options.length === 0) return hideDropdown();
+
+            menu.innerHTML = options.map(opt => `
+                <div class="dropdown-item" onclick="selectDropdownItem('${type}', '${opt.id}', '${opt.name.replace(/'/g, "\\'")}')">
+                ${opt.name}
+        </div>
+        `).join('');
+
+            menu.style.display = 'block';
+            menu.style.width = rect.width + 'px';
+            menu.style.left = rect.left + 'px';
+
+            const spaceBelow = window.innerHeight - rect.bottom;
+            if (spaceBelow < 250) {
+                menu.style.top = (rect.top + window.scrollY - 8) + 'px';
+                menu.style.transform = 'translateY(-100%)';
+            } else {
+                menu.style.top = (rect.bottom + window.scrollY) + 'px';
+                menu.style.transform = 'none';
+            }
+        }
+
+        function selectDropdownItem(type, id, name) {
+            if (type === 'suppliers') {
+                document.getElementById('supplierSearch').value = name;
+                document.getElementById('supplierId').value = id;
+            } else if (type === 'warehouses') {
+                document.getElementById('warehouseSearch').value = name;
+                document.getElementById('warehouseId').value = id;
+            } else if (type === 'headerPaymentTypes') {
+                document.getElementById('headerPaymentTypeSearch').value = name;
+                document.getElementById('headerPaymentType').value = id;
+            } else if (type === 'footerPaymentTypes') {
+                document.getElementById('footerPaymentTypeSearch').value = name;
+                document.getElementById('footerPaymentType').value = id;
+            } else if (type === 'paymentTypes') {
+                document.getElementById('paymentTypeSearch').value = name;
+                document.getElementById('paymentType').value = id;
+            } else if (type === 'taxCodes') {
+                document.getElementById('taxCodeSearch').value = name;
+                document.getElementById('taxCode').value = id;
+                calculateTotals();
+            }
+            hideDropdown();
+        }
+
+        function hideDropdown() {
+            document.getElementById('ddMenu').style.display = 'none';
+        }
+
+        window.onclick = function (event) {
+            if (!event.target.matches('.glass-input') && !event.target.matches('.cell-input')) {
+                hideDropdown();
+            }
+        };
+
+        function updateSyncStatus(text, type) {
+            const el = document.getElementById('syncStatus');
+            el.innerHTML = `<i class="fas fa-circle text-[6px]"></i> ${text}`;
+            if (type === 'success') { el.style.color = '#10b981'; el.style.background = 'rgba(16, 185, 129, 0.1)'; }
+            else if (type === 'warning') { el.style.color = '#f59e0b'; el.style.background = 'rgba(245, 158, 11, 0.1)'; }
+            else { el.style.color = '#ef4444'; el.style.background = 'rgba(239, 68, 68, 0.1)'; }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            items.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const isP = item.isPreview;
+                const mutedClass = isP ? 'preview-text' : '';
+
+                tr.innerHTML = `
+                    <td class="row-idx">${index + 1}</td>
+                    <td>
+                        <div class="cell-container">
+                            <input type="text" value="${item.itemCode || ''}" id="itemCode-${index}" 
+                                oninput="lookupProduct(${index}, 'itemCode', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input ${mutedClass}" placeholder="...">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <input type="text" value="${item.barcode || ''}" id="barcode-${index}" 
+                                oninput="lookupProduct(${index}, 'barcode', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input ${mutedClass}" placeholder="">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <input type="text" value="${item.description || ''}" id="description-${index}" 
+                                oninput="lookupProduct(${index}, 'description', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input ${mutedClass}" placeholder="Select Product...">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <input type="number" value="${item.qty || 0}" id="qty-${index}" 
+                                oninput="updateItem(${index}, 'qty', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input text-center no-spinner" placeholder="0">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <select id="unitId-${index}" onchange="updateItem(${index}, 'unitId', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input text-center">
+                                ${units.map(u => `<option value="${u.id}" ${item.unitId === u.id || (!item.unitId && u.name === 'PCS') ? 'selected' : ''}>${u.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <input type="number" value="${item.cost || 0}" id="cost-${index}" 
+                                oninput="updateItem(${index}, 'cost', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input text-right no-spinner" placeholder="0">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <input type="text" value="${item.discount || 0}" id="discount-${index}" 
+                                oninput="updateItem(${index}, 'discount', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input text-right" placeholder="0">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <input type="number" value="${item.amount || 0}" id="amount-${index}" 
+                                oninput="updateItem(${index}, 'amount', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input text-right font-bold no-spinner" readonly>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-container">
+                            <select id="remark-${index}" onchange="updateItem(${index}, 'item_status', this.value)" 
+                                onkeydown="handleGridKey(${index}, event)"
+                                class="cell-input select-dropdown">
+                                <option value="Normal" ${item.item_status === 'Normal' ? 'selected' : ''}>Normal</option>
+                                <option value="FOC" ${item.item_status === 'FOC' ? 'selected' : ''}>FOC</option>
+                                <option value="Expire" ${item.item_status === 'Expire' ? 'selected' : ''}>Expire</option>
+                                <option value="Damage" ${item.item_status === 'Damage' ? 'selected' : ''}>Damage</option>
+                                <option value="Others" ${item.item_status === 'Others' ? 'selected' : ''}>Others</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <button onclick="removeRow(${index})" class="text-white/20 hover:text-red-400 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+
+        function handleSearch(idx, field, query) {
+            updateItem(idx, field, query);
+
+            if (!query || query.length < 1) {
+                items[idx].isPreview = false;
+                items[idx].tempProductId = null;
+                // Don't clear EVERYTHING, let user type
+                return;
+            }
+
+            const product = productsArray.find(p => {
+                if (!p) return false;
+                const q = query.toLowerCase();
+                return (p.name && p.name.toLowerCase().includes(q)) ||
+                    (p.code && (p.code.toLowerCase() === q || p.code.toLowerCase().startsWith(q))) ||
+                    (p.barcodes && p.barcodes.some(b => b.toLowerCase() === q || b.toLowerCase().startsWith(q)));
+            });
+
+            if (product) {
+                items[idx].isPreview = true;
+                items[idx].tempProductId = product.id;
+                items[idx].itemCode = product.code || items[idx].itemCode;
+                items[idx].barcode = product.barcodes?.[0] || items[idx].barcode;
+                items[idx].description = product.name || items[idx].description;
+                items[idx].cost = product.cost || 0;
+                items[idx].pcsBox = product.pcs_per_box || 1;
+                items[idx].pcsPrice = product.cost || 0;
+
+                // Auto-set unit if product has unit_id
+                if (product.unit_id) {
+                    items[idx].unitId = product.unit_id;
+                    const unit = units.find(u => u.id === product.unit_id);
+                    items[idx].unit = unit ? unit.name : 'PCS';
+                }
+
+                // Surgical update to UI to show "demo" state
+                const row = document.getElementById('tableBody').children[idx];
+                if (row) {
+                    const inputs = row.querySelectorAll('input');
+                    // indices: 0:itemCode, 1:barcode, 2:description, 3:qty, 4:cost, 5:discount, 6:amount, 7:remark?
+                    // Let's use getElementById to be safe
+                    const ic = document.getElementById(`itemCode-${idx}`);
+                    if (ic && field !== 'itemCode') ic.value = product.code || '';
+                    const bc = document.getElementById(`barcode-${idx}`);
+                    if (bc && field !== 'barcode') bc.value = product.barcodes?.[0] || '';
+                    const ds = document.getElementById(`description-${idx}`);
+                    if (ds && field !== 'description') ds.value = product.name || '';
+                    const co = document.getElementById(`cost-${idx}`);
+                    if (co && field !== 'cost') co.value = product.cost || 0;
+
+                    // Apply preview styling
+                    [ic, bc, ds, co].forEach(inp => {
+                        if (inp && inp.id !== `${field}-${idx}`) {
+                            inp.classList.add('preview-text');
+                        }
+                    });
+                }
+            } else {
+                items[idx].isPreview = false;
+                items[idx].tempProductId = null;
+                // Remove preview styling
+                const row = document.getElementById('tableBody').children[idx];
+                if (row) {
+                    row.querySelectorAll('input').forEach(inp => inp.classList.remove('preview-text'));
+                }
+            }
+        }
+
+        function lookupProduct(index, type, value) {
+            items[index][type] = value;
+
+            // For description, show dropdown with search results
+            if (type === 'description') {
+                showProductSearchDropdown(index, value);
+                return;
+            }
+
+            handleSearch(index, type, value);
+        }
+
+        let productSearchIndex = 0;
+        let productSearchItems = [];
+
+        function showProductSearchDropdown(index, query) {
+            const menu = document.getElementById('productSearchMenu');
+            const input = document.getElementById(`description-${index}`);
+            if (!input || !menu) return;
+
+            if (!query || query.length < 1) {
+                menu.style.display = 'none';
+                return;
+            }
+
+            const q = query.toLowerCase();
+            productSearchItems = productsArray
+                .filter(p => p && p.name && p.name.toLowerCase().includes(q))
+                .slice(0, 10);
+
+            productSearchIndex = index;
+
+            if (productSearchItems.length === 0) {
+                menu.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            productSearchItems.forEach((p, i) => {
+                html += `<div class="dropdown-item" onclick="selectProductFromSearch(${i})" 
+                    style="padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px;"
+                    onmouseover="this.style.background='rgba(99,102,241,0.2)'" 
+                    onmouseout="this.style.background='transparent'">
+                    <div style="font-weight:600">${p.name}</div>
+                    <div style="color:var(--text-muted);font-size:9px;">Code: ${p.code || '-'} | Cost: ${p.cost || 0}</div>
+                </div>`;
+            });
+
+            menu.innerHTML = html;
+            menu.style.display = 'block';
+
+            const rect = input.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.top = (rect.bottom + 2) + 'px';
+            menu.style.left = rect.left + 'px';
+            menu.style.minWidth = (rect.width) + 'px';
+            menu.style.maxHeight = '200px';
+            menu.style.overflowY = 'auto';
+        }
+
+        function selectProductFromSearch(itemIdx) {
+            const menu = document.getElementById('productSearchMenu');
+            menu.style.display = 'none';
+
+            const p = productSearchItems[itemIdx];
+            if (!p) return;
+
+            const index = productSearchIndex;
+            items[index].isPreview = true;
+            items[index].tempProductId = p.id;
+            items[index].product_id = p.id;
+            items[index].itemCode = p.code || '';
+            items[index].barcode = p.barcodes?.[0] || '';
+            items[index].description = p.name;
+            items[index].unit = p.unit || 'PCS';
+            items[index].unitId = p.unit_id || null;
+            items[index].pcsBox = p.pcs_per_box || 1;
+            items[index].cost = p.cost;
+            items[index].originalCost = p.cost;
+            items[index].pcsPrice = p.cost;
+            items[index].qty = items[index].qty || 1;
+
+            recalculateRow(index);
+            renderTable();
+
+            setTimeout(() => {
+                const qtyInput = document.getElementById(`qty-${index}`);
+                qtyInput?.focus();
+                qtyInput?.select();
+            }, 50);
+        }
+
+        // Close product search dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            const menu = document.getElementById('productSearchMenu');
+            if (menu && !e.target.closest('#productSearchMenu') && !e.target.closest('[id^="description-"]')) {
+                menu.style.display = 'none';
+            }
+        });
+
+        // Column definitions for navigation
+        const gridColumns = ['itemCode', 'barcode', 'description', 'qty', 'unitId', 'cost', 'discount', 'amount', 'remark'];
+
+        function getCellId(rowIdx, colId) {
+            return `${colId}-${rowIdx}`;
+        }
+
+        function focusCell(rowIdx, colId) {
+            const input = document.getElementById(getCellId(rowIdx, colId));
+            if (input) {
+                input.focus();
+                if (input.select) input.select();
+            }
+        }
+
+        function moveFocus(rowIdx, colId, direction) {
+            const colIdx = gridColumns.indexOf(colId);
+            if (direction === 'right') {
+                if (colIdx < gridColumns.length - 1) {
+                    focusCell(rowIdx, gridColumns[colIdx + 1]);
+                }
+            } else if (direction === 'left') {
+                if (colIdx > 0) {
+                    focusCell(rowIdx, gridColumns[colIdx - 1]);
+                }
+            } else if (direction === 'down') {
+                if (rowIdx < items.length - 1) {
+                    focusCell(rowIdx + 1, colId);
+                } else if (items[rowIdx] && items[rowIdx].product_id) {
+                    addRow(true);
+                    setTimeout(() => focusCell(rowIdx + 1, colId), 50);
+                }
+            } else if (direction === 'up') {
+                if (rowIdx > 0) {
+                    focusCell(rowIdx - 1, colId);
+                }
+            }
+        }
+
+        function handleGridKey(idx, e) {
+            const menu = document.getElementById('ddMenu');
+            if (menu && menu.style.display === 'block') return;
+
+            const productMenu = document.getElementById('productSearchMenu');
+            if (productMenu && productMenu.style.display === 'block') return;
+
+            // Check if select element
+            if (e.target.tagName === 'SELECT') {
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    e.target.blur();
+                    const colId = e.target.id.replace(/-\d+$/, '');
+                    setTimeout(() => moveFocus(idx, colId, 'right'), 10);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const colId = e.target.id.replace(/-\d+$/, '');
+                    moveFocus(idx, colId, 'right');
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const colId = e.target.id.replace(/-\d+$/, '');
+                    moveFocus(idx, colId, 'left');
+                }
+                return;
+            }
+
+            const inputId = e.target.id;
+            const currentCol = inputId.replace(/-\d+$/, '') || 'itemCode';
+            const isReadOnly = e.target.readOnly;
+
+            if (e.key === 'ArrowRight') {
+                // For readonly fields, always move right
+                if (isReadOnly) {
+                    e.preventDefault();
+                    moveFocus(idx, currentCol, 'right');
+                    return;
+                }
+                const selStart = e.target.selectionStart;
+                const val = e.target.value;
+                if (selStart === val.length) {
+                    e.preventDefault();
+                    moveFocus(idx, currentCol, 'right');
+                }
+            } else if (e.key === 'ArrowLeft') {
+                // For readonly fields, always move left
+                if (isReadOnly) {
+                    e.preventDefault();
+                    moveFocus(idx, currentCol, 'left');
+                    return;
+                }
+                const selStart = e.target.selectionStart;
+                if (selStart === 0) {
+                    e.preventDefault();
+                    moveFocus(idx, currentCol, 'left');
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                moveFocus(idx, currentCol, 'down');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                moveFocus(idx, currentCol, 'up');
+            } else if (e.key === 'Enter') {
+                if (items[idx].isPreview && items[idx].tempProductId) {
+                    e.preventDefault();
+                    confirmPreview(idx);
+                } else {
+                    e.preventDefault();
+                    moveFocus(idx, currentCol, 'right');
+                }
+            } else if (e.key === 'Escape') {
+                if (items[idx].isPreview) {
+                    items[idx].isPreview = false;
+                    renderTable();
+                }
+            }
+        }
+
+        function confirmPreview(index, shouldFocusQty = true) {
+            if (!items[index].isPreview) return;
+
+            items[index].product_id = items[index].tempProductId;
+            items[index].isPreview = false;
+            items[index].tempProductId = null;
+            items[index].qty = items[index].qty || 1;
+            items[index].originalCost = items[index].cost;
+            items[index].pcsPrice = items[index].cost;
+
+            recalculateRow(index);
+
+            // Clean up description (remove "Press Enter")
+            const iCode = (items[index].itemCode || '').toLowerCase();
+            const bCode = (items[index].barcode || '').toLowerCase();
+            const p = productsMap.get(iCode) || productsMap.get(bCode);
+            if (p) {
+                items[index].description = p.name;
+                items[index].pcsBox = p.pcs_per_box || 1;
+            }
+
+            renderTable();
+
+            if (shouldFocusQty) {
+                setTimeout(() => {
+                    const qtyInput = document.getElementById(`qty-${index}`);
+                    qtyInput?.focus();
+                    qtyInput?.select();
+                }, 50);
+            }
+        }
+
+        function clearPreview(index) {
+            items[index].isPreview = false;
+            items[index].product_id = null;
+            items[index].tempProductId = null;
+            items[index].itemCode = '';
+            items[index].barcode = '';
+            items[index].description = '';
+            items[index].unit = 'PCS';
+            items[index].cost = 0;
+            renderTable();
+        }
+
+        function updateItem(index, field, value) {
+            if (field === 'qty') items[index].qty = Math.max(0, parseFloat(value) || 0);
+            else if (field === 'cost') items[index].cost = Math.max(0, parseFloat(value) || 0);
+            else if (field === 'discount') items[index].discount = value;
+            else if (field === 'amount') {
+                items[index].amount = Math.max(0, parseFloat(value) || 0);
+                items[index].manualAmount = true;
+                calculateTotals();
+                return;
+            }
+            else if (field === 'unitId') {
+                const oldUnitName = (items[index].unit || '').toUpperCase();
+                items[index].unitId = value;
+                const unitName = (unitsMap.get(value) || '').toUpperCase();
+                items[index].unit = unitsMap.get(value) || '';
+
+                if (unitName.includes('BOX') && items[index].pcsBox && items[index].pcsBox > 1) {
+                    if (!oldUnitName.includes('BOX')) {
+                        items[index].pcsPrice = items[index].originalCost || items[index].cost || 0;
+                    }
+                    const boxPrice = (items[index].pcsPrice || items[index].cost || 0) * items[index].pcsBox;
+                    items[index].cost = boxPrice;
+                    const costCell = document.getElementById(`cost - ${index} `);
+                    if (costCell) costCell.value = boxPrice;
+                } else if ((unitName.includes('PCS') || unitName.includes('PIECE')) && items[index].pcsPrice) {
+                    items[index].cost = items[index].pcsPrice;
+                    const costCell = document.getElementById(`cost - ${index} `);
+                    if (costCell) costCell.value = items[index].pcsPrice;
+                }
+
+                // Recalculate amount after unit change
+                recalculateRow(index);
+            }
+            else if (field === 'item_status') {
+                const oldStatus = items[index].item_status;
+                items[index].item_status = value;
+
+                if (value === 'FOC' || value === 'Expire' || value === 'Damage') {
+                    items[index].originalCost = items[index].cost || 0;
+                    items[index].cost = 0;
+                    items[index].amount = 0;
+                    const costCell = document.getElementById(`cost-${index}`);
+                    if (costCell) costCell.value = 0;
+                }
+                else if ((oldStatus === 'FOC' || oldStatus === 'Expire' || oldStatus === 'Damage') && items[index].originalCost !== undefined) {
+                    items[index].cost = items[index].originalCost;
+                    const costCell = document.getElementById(`cost-${index}`);
+                    if (costCell) costCell.value = items[index].originalCost;
+                }
+            }
+            else items[index][field] = value;
+
+            recalculateRow(index);
+        }
+
+        function recalculateRow(index) {
+            const qty = items[index].qty || (items[index].isPreview ? 1 : 0);
+            const cost = items[index].cost || 0;
+            const dStr = (items[index].discount || '0').toString();
+
+            if (items[index].item_status === 'FOC' || items[index].item_status === 'Expire' || items[index].item_status === 'Damage') {
+                items[index].amount = 0;
+                const amountCell = document.getElementById(`amount - ${index} `);
+                if (amountCell) amountCell.value = 0;
+                calculateTotals();
+                return;
+            }
+
+            let discountPercent = parseFloat(dStr.replace('%', '')) || 0;
+            const discountAmount = (discountPercent / 100) * (qty * cost);
+            items[index].amount = Math.max(0, (qty * cost) - discountAmount);
+
+            const amountCell = document.getElementById(`amount - ${index} `);
+            if (amountCell) amountCell.value = items[index].amount;
+
+            calculateTotals();
+        }
+
+        function addRow(shouldFocus = false) {
+            const index = items.length;
+            items.push({
+                product_id: null,
+                itemCode: '',
+                barcode: '',
+                description: '',
+                qty: 1,
+                unit: 'PCS',
+                unitId: null,
+                cost: 0,
+                discount: 0,
+                amount: 0,
+                remark: '',
+                item_status: 'Normal',
+                isPreview: false
+            });
+            renderTable();
+            if (shouldFocus) {
+                setTimeout(() => focusCell(index, 'itemCode'), 50);
+            }
+        }
+
+        function removeRow(index) {
+            items.splice(index, 1);
+            if (items.length === 0) addRow();
+            renderTable();
+        }
+
+        function calculateTotals() {
+            const sub = items.reduce((acc, i) => acc + (parseFloat(i.amount) || 0), 0);
+            const taxP = parseFloat(document.getElementById('taxPercent').value) || 0;
+            const discP = parseFloat(document.getElementById('overallDiscount').value) || 0;
+            const ship = parseFloat(document.getElementById('shipping').value) || 0;
+            const paid = parseFloat(document.getElementById('paidAmount').value) || 0;
+
+            const taxA = (sub * taxP) / 100;
+            const discA = (sub * discP) / 100;
+            const net = sub + taxA + ship - discA;
+
+            const manualPaymentStatus = document.getElementById('purchaseStatus').value;
+
+            document.getElementById('displaySubTotal').innerText = sub.toLocaleString();
+            document.getElementById('displayTax').innerText = taxA.toLocaleString();
+            document.getElementById('displayDiscount').innerText = '-' + discA.toLocaleString();
+            document.getElementById('displayShipping').innerText = ship.toLocaleString();
+            document.getElementById('displayNet').innerText = net.toLocaleString();
+
+            const rem = net - paid;
+            document.getElementById('remainAmount').innerText = rem.toLocaleString();
+
+            // Auto-select payment status based on amounts (can be overridden manually)
+            const autoStatus = paid >= net ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
+            if (!document.getElementById('purchaseStatus').dataset.manuallySet) {
+                document.getElementById('purchaseStatus').value = autoStatus;
+            }
+
+            const badge = document.getElementById('remainBadge');
+            if (badge) {
+                badge.innerText = `Rem: ${rem.toLocaleString()} `;
+                if (paid > 0 || rem !== net) badge.classList.remove('hidden');
+                else badge.classList.add('hidden');
+            }
+        }
+
+        async function loadOrderByCode() {
+            const code = document.getElementById('orderCodeInput').value.trim();
+            if (!code) return;
+
+            try {
+                updateSyncStatus('Loading...', 'warning');
+                const { data: order, error } = await supabase
+                    .from('purchases')
+                    .select('*, purchase_items(*)')
+                    .eq('reference_no', code)
+                    .single();
+
+                if (error || !order) throw error || new Error('Order not found');
+
+                // Populate form
+                loadedOrderId = null; // We are creating a NEW receipt from a PO
+                // Keep the NEW PV number generated on load
+
+                document.getElementById('supplierId').value = order.supplier_id;
+                const sup = suppliers.find(s => s.id === order.supplier_id);
+                if (sup) document.getElementById('supplierSearch').value = sup.name;
+
+                document.getElementById('warehouseId').value = order.warehouse_id;
+                const wh = warehouses.find(w => w.id === order.warehouse_id);
+                if (wh) document.getElementById('warehouseSearch').value = wh.name;
+
+                const pt = order.payment_type || 'Cash';
+                if (pt.includes('|')) {
+                    const [method, wallet] = pt.split('|');
+                    document.getElementById('headerPaymentType').value = method;
+                    document.getElementById('headerPaymentTypeSearch').value = method;
+                    document.getElementById('footerPaymentType').value = wallet;
+                    document.getElementById('footerPaymentTypeSearch').value = wallet;
+                } else {
+                    document.getElementById('headerPaymentType').value = pt;
+                    document.getElementById('headerPaymentTypeSearch').value = pt;
+                    document.getElementById('footerPaymentType').value = 'None';
+                    document.getElementById('footerPaymentTypeSearch').value = 'None';
+                }
+
+                document.getElementById('taxPercent').value = order.order_tax_percentage || 0;
+                document.getElementById('overallDiscount').value = order.discount_amount ? (order.discount_amount / (order.grand_total - order.order_tax_amount - order.shipping_amount + order.discount_amount) * 100).toFixed(2) : 0;
+                document.getElementById('shipping').value = order.shipping_amount || 0;
+                document.getElementById('paidAmount').value = 0; // Reset paid amount for new receipt
+                document.getElementById('orderNote').value = order.note || '';
+
+                // Load items
+                items = order.purchase_items.map(item => {
+                    const p = productsMapById.get(item.product_id);
+                    return {
+                        product_id: item.product_id,
+                        barcode: p?.barcodes?.[0] || '',
+                        itemCode: p?.code || '',
+                        description: p?.name || '',
+                        qty: item.quantity,
+                        unit: item.unit || 'PCS',
+                        unitId: item.unit_id || null,
+                        pcsBox: item.pcs_box || p?.pcs_per_box || 1,
+                        pcsPrice: p?.cost || item.unit_cost,
+                        cost: item.unit_cost,
+                        discount: item.discount_percentage || 0,
+                        amount: item.subtotal,
+                        remark: item.remark || '',
+                        item_status: 'Normal',
+                        isPreview: false
+                    };
+                });
+
+                renderTable();
+                calculateTotals();
+
+                // Toast notification
+                const orderCode = order.reference_no;
+                document.body.insertAdjacentHTML('afterbegin', `
+                    <div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#10b981;color:white;padding:12px 24px;border-radius:8px;z-index:10000;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+                        ✅ PO Number ${orderCode} Loaded - Ready to Receive
+                    </div>
+                    `);
+                setTimeout(() => document.querySelector('[style*="position:fixed"]')?.remove(), 3000);
+
+                updateSyncStatus('Order Loaded', 'success');
+
+            } catch (err) {
+                console.error('Load error:', err);
+                alert('Failed to load order: ' + err.message);
+                updateSyncStatus('Ready', 'success');
+            }
+        }
+
+        async function saveOrder(printAfter = false) {
+            try {
+                const supplier_id = document.getElementById('supplierId').value;
+                const warehouse_id = document.getElementById('warehouseId').value;
+
+                if (!supplier_id || !warehouse_id) {
+                    alert('⚠️ Please select Supplier and Warehouse.');
+                    return;
+                }
+
+                const validItems = items.filter(i => i.product_id && i.qty > 0);
+                if (validItems.length === 0) {
+                    alert('⚠️ Please add at least one valid item.');
+                    return;
+                }
+
+                updateSyncStatus('Saving...', 'warning');
+                document.getElementById('btnSave').disabled = true;
+
+                const ref_code = document.getElementById('referenceNo').value;
+                const date = document.getElementById('voucherDate').value;
+
+                // Calculate totals
+                const sub = validItems.reduce((acc, i) => acc + i.amount, 0);
+                const taxP = parseFloat(document.getElementById('taxPercent').value) || 0;
+                const discP = parseFloat(document.getElementById('overallDiscount').value) || 0;
+                const ship = parseFloat(document.getElementById('shipping').value) || 0;
+                const paid = parseFloat(document.getElementById('paidAmount').value) || 0;
+
+                const taxA = (sub * taxP) / 100;
+                const discA = (sub * discP) / 100;
+                const net = sub + taxA + ship - discA;
+
+                const purchaseData = {
+                    reference_no: ref_code,
+                    date: date,
+                    supplier_id,
+                    warehouse_id,
+                    status: 'Received',
+                    payment_status: document.getElementById('purchaseStatus').value,
+                    payment_type: document.getElementById('headerPaymentType').value + '|' + document.getElementById('footerPaymentType').value,
+                    total_qty: validItems.reduce((acc, i) => acc + (parseFloat(i.qty) || 0), 0),
+                    grand_total: net,
+                    order_tax_percentage: taxP,
+                    order_tax_amount: taxA,
+                    discount_amount: discA,
+                    shipping_amount: ship,
+                    paid_amount: paid,
+                    note: document.getElementById('orderNote').value,
+                    created_by: currentUser?.id
+                };
+
+                let purchaseId;
+                const { data: pData, error: pErr } = await supabase
+                    .from('purchases')
+                    .upsert(purchaseData, { onConflict: 'reference_no' })
+                    .select()
+                    .single();
+
+                if (pErr) throw pErr;
+                purchaseId = pData.id;
+
+                // Record payment in purchase_payments table
+                const paidAmt = parseFloat(document.getElementById('paidAmount').value) || 0;
+                if (paidAmt > 0) {
+                    await supabase.from('purchase_payments').insert([{
+                        purchase_id: purchaseId,
+                        payment_date: document.getElementById('voucherDate').value,
+                        amount: paidAmt,
+                        payment_method: document.getElementById('headerPaymentType').value,
+                        note: 'Initial payment'
+                    }]);
+                }
+
+                await supabase.from('purchase_items').delete().eq('purchase_id', purchaseId);
+
+                const itemsToSave = validItems.map(item => {
+                    const qty = parseFloat(item.qty) || 0;
+                    const cost = parseFloat(item.cost) || 0;
+                    const dStr = (item.discount || '0').toString();
+                    const discountPercent = parseFloat(dStr.replace('%', '')) || 0;
+                    const discountAmount = (discountPercent / 100) * (qty * cost);
+                    return {
+                        purchase_id: purchaseId,
+                        product_id: item.product_id,
+                        quantity: item.qty,
+                        unit: item.unit,
+                        unit_id: item.unitId,
+                        unit_cost: item.cost,
+                        discount_percentage: discountPercent,
+                        discount_amount: discountAmount,
+                        subtotal: item.amount,
+                        item_status: item.item_status || 'Normal',
+                        pcs_box: item.pcsBox,
+                        remark: item.remark
+                    };
+                });
+
+                const { error: itemsErr } = await supabase.from('purchase_items').insert(itemsToSave);
+                if (itemsErr) throw itemsErr;
+
+                // Manual stock update removed - handled automatically via Postgres triggers (trg_purchase_stock_sync)
+
+                if (printAfter) {
+                    window.open(`purchase-voucher-print.html?id=${purchaseId}`, '_blank');
+                    // Give some time before reload so data is settled
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    alert('✅ Purchase Receipt Saved Successfully!');
+                    window.location.reload();
+                }
+
+            } catch (err) {
+                console.error('Save error:', err);
+                alert('Failed to save purchase: ' + err.message);
+                document.getElementById('btnSave').disabled = false;
+                updateSyncStatus('Save Failed', 'error');
+            }
+        }
+
+        async function viewPendingOrders() {
+            try {
+                const { data, error } = await supabase
+                    .from('purchases')
+                    .select('*, supplier:suppliers(name)')
+                    .eq('status', 'Ordered')
+                    .order('date', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    alert('No pending orders found.');
+                    return;
+                }
+
+                // Create modal
+                let html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="this.remove()">';
+                html += '<div style="background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:20px;max-width:800px;width:90%;max-height:80vh;overflow-y:auto;" onclick="event.stopPropagation()">';
+                html += '<h2 style="color:#6366f1;margin-bottom:15px;font-size:18px;font-weight:700;">📋 Pending Purchase Orders</h2>';
+                html += '<table style="width:100%;border-collapse:collapse;">';
+                html += '<thead><tr style="border-bottom:2px solid rgba(255,255,255,0.1);"><th style="text-align:left;padding:8px;color:#94a3b8;font-size:11px;">PO NUMBER</th><th style="text-align:left;padding:8px;color:#94a3b8;font-size:11px;">DATE</th><th style="text-align:left;padding:8px;color:#94a3b8;font-size:11px;">SUPPLIER</th><th style="text-align:right;padding:8px;color:#94a3b8;font-size:11px;">TOTAL</th><th style="text-align:right;padding:8px;color:#f59e0b;font-size:11px;">REMAIN</th><th style="text-align:center;padding:8px;color:#94a3b8;font-size:11px;">ACTION</th></tr></thead>';
+                html += '<tbody>';
+
+                data.forEach(order => {
+                    const remain = order.grand_total - (order.paid_amount || 0);
+                    html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">`;
+                    html += `<td style="padding:8px;color:#6366f1;font-weight:600;font-size:12px;">${order.reference_no}</td>`;
+                    html += `<td style="padding:8px;color:#f1f5f9;font-size:12px;">${order.date}</td>`;
+                    html += `<td style="padding:8px;color:#f1f5f9;font-size:12px;">${order.supplier?.name || 'N/A'}</td>`;
+                    html += `<td style="padding:8px;color:#10b981;font-weight:600;text-align:right;font-size:12px;">${order.grand_total.toLocaleString()}</td>`;
+                    html += `<td style="padding:8px;color:#f59e0b;font-weight:600;text-align:right;font-size:12px;">${remain.toLocaleString()}</td>`;
+                    html += `<td style="padding:8px;text-align:center;"><button onclick="document.getElementById('orderCodeInput').value='${order.reference_no}';loadOrderByCode();this.closest('[style*=fixed]').remove();" style="background:#6366f1;color:white;padding:4px 12px;border-radius:4px;font-size:10px;border:none;cursor:pointer;font-weight:700;">LOAD</button></td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                html += '<div style="margin-top:15px;text-align:right;"><button style="background:#6366f1;color:white;padding:8px 16px;border-radius:4px;font-weight:700;font-size:11px;border:none;cursor:pointer;" onclick="this.closest(\'div[style*=fixed]\').remove()">CLOSE</button></div>';
+                html += '</div></div>';
+
+                document.body.insertAdjacentHTML('beforeend', html);
+
+            } catch (err) {
+                console.error('Load orders error:', err);
+                alert('Failed to load pending orders: ' + err.message);
+            }
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-terminal" style="color:var(--t3)"></i> Log Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Transaction History</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Total Logs</div>
+                <div class="ds-v" id="h-log-total">0</div>
+                <div class="ds-s">History</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Errors</div>
+                <div class="ds-v" id="h-log-err" style="color:var(--red)">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Active Users</div>
+                <div class="ds-v" id="h-log-user" style="color:var(--green)">1</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Module</th>
+                        <th>Reference</th>
+                        <th>Amount</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-log-report"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-log-report"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'log-report';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            // Handle stats
+            const total = DATA.length;
+            const err = DATA.filter(d => d.level === 'error' || d.result === 'failed').length;
+
+            document.getElementById('h-log-total').innerText = total;
+            document.getElementById('h-log-err').innerText = err;
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                body.innerHTML = sl.map(r => `
+                    <tr>
+                        <td class="td tm">${r.ts}</td>
+                        <td class="te">${r.user}</td>
+                        <td>${ab(r.action)}</td>
+                        <td class="tx">${r.mod}</td>
+                        <td class="tm">${r.ref}</td>
+                        <td class="ta tm">${r.amt}</td>
+                        <td>${sb(r.result)}</td>
+                    </tr>
+                `).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

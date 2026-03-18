@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: 16px;
+            --accent-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        body {
+            background: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.1) 0px, transparent 50%);
+            min-height: 100vh;
+        }
+
+        body.embedded {
+            background: transparent;
+            background-image: none;
+        }
+
+        .settings-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Premium Tabs */
+        .tabs-header {
+            display: inline-flex;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            padding: 4px;
+            border-radius: 14px;
+            gap: 4px;
+            margin-bottom: var(--space-2xl);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button i {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-button.active {
+            color: white;
+            background: var(--primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.3);
+            margin-bottom: var(--space-xl);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: var(--space-xl);
+            padding-bottom: var(--space-md);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-xl);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .field-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .excel-input,
+        .excel-select {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .excel-input:focus,
+        .excel-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.6);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Premium Toggle */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-group:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-slider {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-slider:before {
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked+.toggle-slider {
+            background: var(--primary);
+        }
+
+        /* Receipt Grid */
+        .receipt-toggles {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+
+        /* Submit Button */
+        .btn-primary {
+            margin-top: var(--space-xl);
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            border-radius: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            box-shadow: var(--shadow-glow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .logo-preview-container {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            border: 2px dashed var(--glass-border);
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.02);
+            overflow: hidden;
+        }
+
+        .logo-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .settings-grid, .receipt-toggles {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="settings-container">
+        <!-- Tabs Header -->
+        <div class="tabs-header">
+            <button class="tab-button active" data-tab="settings">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+            <button class="tab-button" data-tab="prefixes">
+                <i class="fas fa-hashtag"></i> Prefixes
+            </button>
+            <button class="tab-button" data-tab="mail">
+                <i class="fas fa-envelope"></i> Mail Settings
+            </button>
+            <button class="tab-button" data-tab="receipt">
+                <i class="fas fa-receipt"></i> Receipt Settings
+            </button>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content active" id="tab-settings">
+            <div class="glass-card">
+                <div class="section-header">
+                    <i class="fas fa-cog text-indigo-400"></i>
+                    <h2>System Configuration</h2>
+                </div>
+            <form id="settingsForm">
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label class="field-label">Default Currency:*</label>
+                        <select id="defaultCurrency" class="excel-select" required>
+                            <option value="">Select Currency</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Default Email:</label>
+                        <input type="email" id="defaultEmail" class="excel-input" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group full-width">
+                        <div class="toggle-group">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="currencyIconRight">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <label class="field-label" style="margin: 0;">Currency Icon Right Side</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Logo</label>
+                        <div class="logo-upload">
+                            <div class="logo-preview-container">
+                                <img id="logoPreview" src="" alt="Logo" class="logo-preview" style="display: none;">
+                                <i id="logoPlaceholder" class="fas fa-image text-slate-600 text-2xl"></i>
+                            </div>
+                            <input type="file" id="logoUpload" accept="image/*" class="excel-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Company Name:</label>
+                        <input type="text" id="companyName" class="excel-input" placeholder="Enter company name">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Company Phone:</label>
+                        <input type="tel" id="companyPhone" class="excel-input" placeholder="Enter phone number">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Developed By:</label>
+                        <input type="text" id="developedBy" class="excel-input" placeholder="Developer name">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="field-label">Footer:</label>
+                        <input type="text" id="footer" class="excel-input" placeholder="Footer text">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Default Customer:*</label>
+                        <input type="text" id="defaultCustomer" class="excel-input" placeholder="walk-in-customer">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Default Warehouse:*</label>
+                        <select id="defaultWarehouse" class="excel-select" required>
+                            <option value="">Select Warehouse</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Country:*</label>
+                        <input type="text" id="country" class="excel-input" placeholder="Enter country">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">State:*</label>
+                        <input type="text" id="state" class="excel-input" placeholder="Enter state">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">City:</label>
+                        <input type="text" id="city" class="excel-input" placeholder="Enter city">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Postal Code:</label>
+                        <input type="text" id="postalCode" class="excel-input" placeholder="Enter postal code">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Date Format:*</label>
+                        <input type="text" id="dateFormat" class="excel-input" placeholder="YYYY-MM-DD"
+                            value="YYYY-MM-DD">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </form>
+            </div>
+        </div>
+
+        <!-- Prefixes Tab -->
+        <div class="tab-content" id="tab-prefixes">
+            <div class="glass-card">
+                <div class="section-header">
+                    <i class="fas fa-hashtag text-indigo-400"></i>
+                    <h2>Voucher Prefixes</h2>
+                </div>
+            <form id="prefixesForm">
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label class="field-label">Purchases:*</label>
+                        <input type="text" id="purchasePrefix" class="excel-input" placeholder="PU" value="PU">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Purchases Returns:*</label>
+                        <input type="text" id="purchaseReturnPrefix" class="excel-input" placeholder="PR" value="PR">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Sales:*</label>
+                        <input type="text" id="salesPrefix" class="excel-input" placeholder="SA" value="SA">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Sales Returns:*</label>
+                        <input type="text" id="salesReturnPrefix" class="excel-input" placeholder="SR" value="SR">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Expense:*</label>
+                        <input type="text" id="expensePrefix" class="excel-input" placeholder="EX" value="EX">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="field-label">Purchase Voucher Title:</label>
+                        <input type="text" id="purchaseVoucherTitle" class="excel-input" placeholder="e.g. VOUCHER"
+                            value="VOUCHER">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Save Prefixes</button>
+            </form>
+            </div>
+        </div>
+
+        <!-- Mail Settings Tab -->
+        <div class="tab-content" id="tab-mail">
+            <div class="glass-card">
+                <div class="section-header">
+                    <i class="fas fa-envelope text-indigo-400"></i>
+                    <h2>SMTP Configuration</h2>
+                </div>
+            <form id="mailForm">
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label class="field-label">MAIL_MAILER:*</label>
+                        <input type="text" id="mailMailer" class="excel-input" placeholder="smtp" value="smtp">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">MAIL_HOST:*</label>
+                        <input type="text" id="mailHost" class="excel-input" placeholder="mailhog">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">MAIL_PORT:*</label>
+                        <input type="text" id="mailPort" class="excel-input" placeholder="1025" value="1025">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Sender Name:*</label>
+                        <input type="text" id="senderName" class="excel-input" placeholder="from@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">MAIL_USERNAME:*</label>
+                        <input type="text" id="mailUsername" class="excel-input" placeholder="username">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">MAIL_PASSWORD:*</label>
+                        <input type="password" id="mailPassword" class="excel-input" placeholder="password">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="field-label">MAIL_ENCRYPTION:*</label>
+                        <input type="text" id="mailEncryption" class="excel-input" placeholder="MAIL_ENCRYPTION">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Save Mail Settings</button>
+            </form>
+            </div>
+        </div>
+
+        <!-- Receipt Settings Tab -->
+        <div class="tab-content" id="tab-receipt">
+            <div class="glass-card">
+                <div class="section-header">
+                    <i class="fas fa-receipt text-indigo-400"></i>
+                    <h2>Receipt Designer</h2>
+                </div>
+            <form id="receiptForm">
+                <div class="receipt-toggles">
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showNote" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show note</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showPhone" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show Phone</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showCustomer" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show Customer</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showAddress" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show Address</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showEmail">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show Email</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showTaxDiscount" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show Tax & Discount & Shipping</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showBarcode" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show barcode in receipt</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showLogoPayment">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show logo in payment slip</label>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showProductCode">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label class="field-label" style="margin: 0;">Show Product Code</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Note:*</label>
+                    <input type="text" id="receiptNote" class="excel-input" placeholder="Enter receipt note"
+                        value="😊 ပယ်ယူအားပေးမှုအတွက် 😊">
+                </div>
+                <button type="submit" class="btn-primary">Save Receipt Settings</button>
+            </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/settings.js"></script>
+</body>
+
+</html>

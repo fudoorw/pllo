@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Book Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+    <style>
+        .row-highlight {
+            background: rgba(59, 130, 246, 0.08) !important;
+            border-left: 4px solid var(--blue);
+        }
+
+        .row-highlight .td {
+            color: var(--blue) !important;
+            font-weight: 700;
+        }
+
+        .ta {
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.02em;
+        }
+
+        .ds-v {
+            font-size: 20px !important;
+            font-weight: 900 !important;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .ds-l {
+            font-size: 12px !important;
+            color: var(--t2) !important;
+            margin-bottom: 4px;
+        }
+
+        .tx {
+            font-size: 13px !important;
+        }
+
+        .tx small {
+            color: var(--t3) !important;
+            margin-top: 4px;
+            font-size: 11px;
+        }
+
+        thead th {
+            font-size: 11px !important;
+            color: #fff !important;
+            background: #1e293b !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-wallet" style="color:var(--blue)"></i> Cash Book</span>
+            <span class="ca">›</span>
+            <span class="cc">Transaction History</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Balance</div>
+                <div class="ds-v" id="h-cb-bal">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Period In</div>
+                <div class="ds-v" id="h-cb-in" style="color:var(--green)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Period Out</div>
+                <div class="ds-v" id="h-cb-out" style="color:var(--red)">0 Ks</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-m">Date</th>
+                        <th class="col-l">Description</th>
+                        <th class="col-m">Cash In ( KS )</th>
+                        <th class="col-m">Cash Out ( KS )</th>
+                        <th class="col-m">Balance ( KS )</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-cash-book"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-cash-book"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'cash-book';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            const cin = DATA.filter(d => d.type === 'IN').reduce((a, b) => a + (b.inv || 0), 0);
+            const cout = DATA.filter(d => d.type === 'OUT').reduce((a, b) => a + (b.out || 0), 0);
+            const latestBal = DATA.length > 0 ? DATA[0].bal : 0;
+
+            document.getElementById('h-cb-bal').innerText = fmt(latestBal) + ' Ks';
+            document.getElementById('h-cb-in').innerText = fmt(cin) + ' Ks';
+            document.getElementById('h-cb-out').innerText = fmt(cout) + ' Ks';
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                body.innerHTML = sl.map(r => `
+                    <tr class="${r.type === 'OPEN' ? 'row-highlight' : ''}">
+                        <td class="td">${r.date}</td>
+                        <td class="tx">${r.desc} ${r.ref && r.ref !== '-' ? `<small style="opacity:.5;display:block">Ref: ${r.ref}</small>` : ''}</td>
+                        <td class="ta" style="color:var(--green)">${r.inv > 0 ? fmt(r.inv) : ''}</td>
+                        <td class="ta" style="color:var(--red)">${r.out > 0 ? fmt(r.out) : ''}</td>
+                        <td class="ta" style="color:var(--${r.bal >= 0 ? 'yellow' : 'red'})">${fmt(r.bal)}</td>
+                    </tr>
+                `).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

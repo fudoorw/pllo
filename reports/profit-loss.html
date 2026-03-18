@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit & Loss Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+    <style>
+        .t-account {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .t-account::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border);
+            z-index: 2;
+        }
+
+        .t-side {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.01);
+            min-height: 320px;
+        }
+
+        .t-head {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 14px 20px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 800;
+            color: var(--t1);
+            font-size: 14px;
+        }
+
+        .t-body {
+            flex: 1;
+            padding: 0;
+        }
+
+        .t-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 13.5px;
+            color: var(--t1);
+        }
+
+        .t-row.total {
+            background: rgba(0, 0, 0, 0.2);
+            font-weight: 800;
+            color: #fff;
+            border-bottom: none;
+            border-top: 2px solid var(--border);
+            margin-top: auto;
+            font-size: 15px;
+        }
+
+        .t-row.net-profit {
+            font-weight: 800;
+            color: var(--green);
+            background: rgba(34, 197, 94, 0.08);
+            border-top: 1px dashed var(--green);
+        }
+
+        .ks-label {
+            font-size: 12px;
+            color: var(--t3);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-chart-line" style="color:var(--green)"></i> Financial Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Profit & Loss (T-Account)</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Gross Revenue</div>
+                <div class="ds-v" id="h-pl-rev">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Cost of Goods</div>
+                <div class="ds-v" id="h-pl-cog" style="color:var(--orange)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Net Profit</div>
+                <div class="ds-v" id="h-pl-pro" style="color:var(--green)">0 Ks</div>
+            </div>
+        </div>
+
+        <div id="pl-content">
+            <!-- T-Account Layout -->
+            <div class="t-account">
+                <!-- Debit Side (Expenses) -->
+                <div class="t-side">
+                    <div class="t-head">
+                        <span>Dr. (Debit Side)</span>
+                        <span class="ks-label">KS</span>
+                    </div>
+                    <div class="t-body" id="debit-body">
+                        <!-- Expenses injected here -->
+                    </div>
+                    <div class="t-row net-profit" id="net-profit-row">
+                        <span>Net Profit (Capital a/c)</span>
+                        <span id="val-net-profit">0</span>
+                    </div>
+                    <div class="t-row total">
+                        <span>Total</span>
+                        <span id="total-debit">0</span>
+                    </div>
+                </div>
+
+                <!-- Credit Side (Income) -->
+                <div class="t-side">
+                    <div class="t-head">
+                        <span>Cr. (Credit Side)</span>
+                        <span class="ks-label">KS</span>
+                    </div>
+                    <div class="t-body" id="credit-body">
+                        <div class="t-row">
+                            <span>Gross Profit b/d</span>
+                            <span id="val-gross-profit">0</span>
+                        </div>
+                    </div>
+                    <div class="t-row total">
+                        <span>Total</span>
+                        <span id="total-credit">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'profit-loss';
+
+        function renderV() {
+            if (!DATA || DATA.length === 0 || !DATA[0].summary) return;
+            const s = DATA[0].summary;
+            const content = document.getElementById('pl-content');
+
+            // Handle empty state
+            if (s.rev === 0 && s.totalExp === 0) {
+                content.style.position = 'relative';
+                // We keep the original innerHTML but wrap it in a faded container
+                const originalHTML = `
+                    <div class="t-account">
+                        <div class="t-side">
+                            <div class="t-head"><span>Dr. (Debit Side)</span><span class="ks-label">KS</span></div>
+                            <div class="t-body" id="debit-body"></div>
+                            <div class="t-row net-profit" id="net-profit-row"><span>Net Profit (Capital a/c)</span><span id="val-net-profit">0</span></div>
+                            <div class="t-row total"><span>Total</span><span id="total-debit">0</span></div>
+                        </div>
+                        <div class="t-side">
+                            <div class="t-head"><span>Cr. (Credit Side)</span><span class="ks-label">KS</span></div>
+                            <div class="t-body" id="credit-body">
+                                <div class="t-row"><span>Gross Profit b/d</span><span id="val-gross-profit">0</span></div>
+                            </div>
+                            <div class="t-side-footer"></div>
+                            <div class="t-row total"><span>Total</span><span id="total-credit">0</span></div>
+                        </div>
+                    </div>
+                `;
+                content.innerHTML = `
+                    <div style="opacity: 0.15; pointer-events: none;">
+                        ${originalHTML}
+                    </div>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                background: rgba(30, 41, 59, 0.9); padding: 30px 50px; border-radius: 16px; 
+                                border: 1px solid var(--border); text-align: center; z-index: 10;
+                                box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(10px); width: 80%; max-width: 400px;">
+                        <i class="fas fa-calendar-times" style="font-size: 40px; color: var(--orange); margin-bottom: 15px; display: block;"></i>
+                        <h3 style="color: #fff; margin-bottom: 8px; font-weight: 800;">No Data Found</h3>
+                        <p style="color: var(--t2); font-size: 14px; line-height: 1.6;">There are no transactions or expenses recorded for the selected period.<br><strong style="color:var(--t1)">Try selecting mid-February.</strong></p>
+                    </div>
+                `;
+                document.getElementById('h-pl-rev').innerText = '0 Ks';
+                document.getElementById('h-pl-cog').innerText = '0 Ks';
+                document.getElementById('h-pl-pro').innerText = '0 Ks';
+                return;
+            }
+
+            // Restore structure for normal rendering
+            content.innerHTML = `
+                <div class="t-account">
+                    <div class="t-side">
+                        <div class="t-head"><span>Dr. (Debit Side)</span><span class="ks-label">KS</span></div>
+                        <div class="t-body" id="debit-body"></div>
+                        <div class="t-row net-profit" id="net-profit-row"><span>Net Profit (Capital a/c)</span><span id="val-net-profit">0</span></div>
+                        <div class="t-row total"><span>Total</span><span id="total-debit">0</span></div>
+                    </div>
+                    <div class="t-side">
+                        <div class="t-head"><span>Cr. (Credit Side)</span><span class="ks-label">KS</span></div>
+                        <div class="t-body" id="credit-body">
+                            <div class="t-row"><span>Gross Profit b/d</span><span id="val-gross-profit">0</span></div>
+                        </div>
+                        <div class="t-row total"><span>Total</span><span id="total-credit">0</span></div>
+                    </div>
+                </div>
+            `;
+
+            // Update top stats
+            document.getElementById('h-pl-rev').innerText = fmt(s.rev) + ' Ks';
+            document.getElementById('h-pl-cog').innerText = fmt(s.cog) + ' Ks';
+            document.getElementById('h-pl-pro').innerText = fmt(s.np) + ' Ks';
+
+            // Render Expenses (Debit Side)
+            const debitBody = document.getElementById('debit-body');
+            debitBody.innerHTML = s.expenses.length > 0 ? s.expenses.map(e => `
+                <div class="t-row">
+                    <span>${e.name}</span>
+                    <span>${fmt(e.amount)}</span>
+                </div>
+            `).join('') : '<div class="t-row" style="opacity:0.3;font-style:italic"><span>No expenses</span><span>0</span></div>';
+
+            // Credit Side: Gross Profit b/d
+            document.getElementById('val-gross-profit').innerText = fmt(s.gp);
+
+            // Balance Calculation Logic
+            const npRow = document.getElementById('net-profit-row');
+            const npVal = document.getElementById('val-net-profit');
+
+            if (s.np >= 0) {
+                // Net Profit - goes on Debit side to balance out
+                npRow.style.display = 'flex';
+                npRow.querySelector('span:first-child').innerText = 'Net Profit (Capital a/c)';
+                npRow.style.color = 'var(--green)';
+                npVal.innerText = fmt(s.np);
+                document.getElementById('total-debit').innerText = fmt(s.gp);
+                document.getElementById('total-credit').innerText = fmt(s.gp);
+            } else {
+                // Net Loss - goes on Credit side to balance out (Simplified for UI)
+                npRow.style.display = 'flex';
+                npRow.querySelector('span:first-child').innerText = 'Net Loss (Deficit)';
+                npRow.style.color = 'var(--red)';
+                npVal.innerText = fmt(Math.abs(s.np));
+                const balTotal = Math.max(s.gp, s.totalExp);
+                document.getElementById('total-debit').innerText = fmt(balTotal);
+                document.getElementById('total-credit').innerText = fmt(balTotal);
+            }
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

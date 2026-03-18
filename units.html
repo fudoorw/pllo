@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Unit Management - POS System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        :root {
+            --bg-glass: rgba(15, 23, 42, 0.6);
+            --bg-glass-hover: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: transparent;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: var(--space-md);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Excel-like Grid Layout */
+        .sheet-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+
+        .sheet-toolbar {
+            padding: var(--space-md) var(--space-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .sheet-wrapper {
+            flex: 1;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 0.875rem;
+        }
+
+        .excel-table th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: var(--bg-primary);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.70rem;
+            letter-spacing: 0.05em;
+            padding: 12px 10px;
+            border-bottom: 2px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .excel-table td {
+            padding: 0;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .excel-tr:hover td {
+            background: rgba(45, 212, 191, 0.03);
+        }
+
+        .excel-tr.modified td {
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .excel-tr.new-row td {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .excel-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 10px;
+            outline: none;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .excel-input:focus {
+            background: rgba(79, 70, 229, 0.1);
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
+        /* Resizer */
+        .header-cell {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            width: 100%;
+        }
+
+        .resizer {
+            position: absolute;
+            right: -5px;
+            top: 0;
+            width: 10px;
+            height: 100%;
+            cursor: col-resize;
+            z-index: 10;
+        }
+
+        .resizer:hover {
+            background: var(--primary);
+            opacity: 0.5;
+        }
+
+            .btn-simple {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 16px;
+                font-size: 0.875rem;
+                font-weight: 600;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: none;
+                white-space: nowrap;
+                min-height: 42px;
+            }
+
+            .btn-simple-primary {
+                background: var(--primary);
+                color: white;
+            }
+
+            .btn-simple-primary:hover {
+                background: var(--primary-dark);
+            }
+
+            .btn-simple-success {
+                background: #10b981;
+                color: white;
+            }
+
+            .btn-simple-success:hover {
+                background: #059669;
+            }
+
+            .btn-simple-danger {
+                background: #ef4444;
+                color: white;
+            }
+
+            .btn-simple-danger:hover {
+                background: #dc2626;
+            }
+
+            .btn-simple-ghost {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+            }
+
+            .btn-simple-ghost:hover {
+                background: rgba(255, 255, 255, 0.15);
+            }
+
+            .btn-premium-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-premium-danger:hover {
+            background: #ef4444;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            border-color: #ef4444;
+        }
+
+        .checkbox-container {
+            display: block;
+            position: relative;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            user-select: none;
+            margin: 0 auto;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 18px;
+            width: 18px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container:hover input~.checkmark {
+            background-color: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-light);
+        }
+
+        .checkbox-container input:checked~.checkmark {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .checkbox-container input:checked~.checkmark:after {
+            display: block;
+        }
+
+        .checkbox-container .checkmark:after {
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .empty-state {
+            padding: 60px;
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sheet-container">
+        <!-- Toolbar -->
+        <div class="sheet-toolbar">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="syncStatus" class="sync-status" style="font-size: 0.75rem; color: var(--text-muted);">
+                    <i class="fas fa-database"></i> <span id="syncStatusText">Ready</span>
+                </span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button class="btn-simple btn-simple-ghost" onclick="loadUnits()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button class="btn-simple btn-simple-primary" onclick="addNewUnit()">
+                    <i class="fas fa-plus"></i> Add Row
+                </button>
+                <button class="btn-simple btn-simple-danger" onclick="bulkDelete()" id="deleteBtn">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button class="btn-simple btn-simple-success" onclick="saveChanges()" id="saveBtn">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+
+        <!-- Sheet Wrapper -->
+        <div class="sheet-wrapper">
+            <table class="excel-table">
+                <thead id="gridHeader">
+                    <!-- Populated by JS -->
+                </thead>
+                <tbody id="gridBody">
+                    <!-- Populated by JS -->
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i><br>
+                            Loading units...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/units.js"></script>
+    <script>
+        // Bridge for sync status
+        window.updateModuleSyncStatus = function (module, status) {
+            const el = document.getElementById('syncStatusText');
+            if (el) {
+                el.textContent = status;
+            }
+        };
+    </script>
+</body>
+
+</html>

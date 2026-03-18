@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Stock Breakdown</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-warehouse" style="color:var(--blue)"></i> Stock Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Warehouse Breakdown</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Total Items</div>
+                <div class="ds-v" id="h-total-items">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Stock</div>
+                <div class="ds-v" id="h-total-stock">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Stock Value</div>
+                <div class="ds-v" id="h-stock-val" style="color:var(--green)">0 Ks</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-m">
+                            <div class="cell-container">CODE</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">BARCODE</div>
+                        </th>
+                        <th class="col-l">
+                            <div class="cell-container">DESCRIPTION</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">WAREHOUSE</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">CATEGORY</div>
+                        </th>
+                        <th class="col-s">
+                            <div class="cell-container">STOCK</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">COST PRICE</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">SALE PRICE</div>
+                        </th>
+                        <th class="col-m">
+                            <div class="cell-container">VALUE (COST)</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="tb-warehouse-stock"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-warehouse-stock"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'warehouse-stock';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            const totalItems = DATA.length;
+            const totalStock = DATA.reduce((a, b) => a + (b.qty || 0), 0);
+            const totalValue = DATA.reduce((a, b) => a + ((b.qty || 0) * (b.cost || 0)), 0);
+
+            document.getElementById('h-total-items').innerText = totalItems;
+            document.getElementById('h-total-stock').innerText = totalStock;
+            document.getElementById('h-stock-val').innerText = fmt(totalValue) + ' Ks';
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                body.innerHTML = sl.map(r => `
+                    <tr>
+                        <td><div class="cell-container">${r.itemCode || ''}</div></td>
+                        <td><div class="cell-container">${r.barcode || ''}</div></td>
+                        <td class="te"><div class="cell-container">${r.description || ''}</div></td>
+                        <td class="te"><div class="cell-container">${r.warehouse || ''}</div></td>
+                        <td class="te"><div class="cell-container">${r.category || ''}</div></td>
+                        <td><div class="cell-container">${r.qty || 0}</div></td>
+                        <td class="ta"><div class="cell-container">${fmt(r.cost)}</div></td>
+                        <td class="ta"><div class="cell-container">${fmt(r.price)}</div></td>
+                        <td class="ta" style="color:var(--green)"><div class="cell-container">${fmt(r.qty * r.cost)}</div></td>
+                    </tr>
+                `).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

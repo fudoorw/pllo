@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-users" style="color:var(--purple)"></i> Supplier Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Supplier List</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Total Suppliers</div>
+                <div class="ds-v" id="h-sup-count">0</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Outstanding</div>
+                <div class="ds-v" id="h-sup-out" style="color:var(--red)">0 Ks</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Supplier Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Address</th>
+                        <th>Outstanding Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-supplier-report"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-supplier-report"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'supplier-report';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            const totalOut = DATA.reduce((a, b) => a + (b.out || 0), 0);
+            document.getElementById('h-sup-count').innerText = DATA.length;
+            document.getElementById('h-sup-out').innerText = fmt(totalOut) + ' Ks';
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                body.innerHTML = sl.map(r => `
+                    <tr>
+                        <td class="te">${r.name}</td>
+                        <td class="tx">${r.email}</td>
+                        <td class="tm">${r.phone}</td>
+                        <td class="tx">${r.addr}</td>
+                        <td class="ta" style="color:var(--red);font-weight:600">${fmt(r.out)}</td>
+                    </tr>
+                `).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

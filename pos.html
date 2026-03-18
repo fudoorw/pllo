@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Glass POS System</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/receipt-print.css">
+
+    <style>
+        html,
+        body {
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --bg-primary: #0a0f1d;
+            --bg-glass: rgba(255, 255, 255, 0.04);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --radius-xl: 1rem;
+            --border-glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-image:
+                radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(236, 72, 153, 0.08) 0%, transparent 40%);
+        }
+
+        #internal-sales-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: var(--bg-primary);
+        }
+
+        #internal-sales-view.hidden {
+            display: none;
+        }
+
+        .pos-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 14px;
+            padding: 14px;
+            height: 100vh;
+            box-sizing: border-box;
+            background: transparent;
+        }
+
+        @media (min-width: 1280px) {
+            .pos-grid {
+                grid-template-columns: 1fr 500px;
+            }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.3);
+        }
+
+        .cart-table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .cart-table th {
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--text-secondary);
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 12px 10px;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .cart-table td {
+            padding: 10px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .cart-table tr:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .cart-table tr.selected {
+            background: rgba(99, 102, 241, 0.25);
+            box-shadow: inset 2px 0 0 var(--primary);
+        }
+
+        .grid-input {
+            background: transparent;
+            border: none;
+            width: 100%;
+            height: 100%;
+            text-align: inherit;
+            font-size: inherit;
+            font-weight: inherit;
+            color: inherit;
+            outline: none;
+            padding: 0;
+            margin: 0;
+            display: block;
+        }
+
+        /* Custom styling for select dropdowns in the cart grid */
+        select.grid-input {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            padding: 0 6px;
+            color: inherit;
+            text-align: center;
+        }
+
+        /* Hide default dropdown arrow in some browsers */
+        select.grid-input::-ms-expand {
+            display: none;
+        }
+
+        /* Style the options to inherit dark theme */
+        select.grid-input option {
+            background-color: #1e293b;
+            /* slate-800 */
+            color: #f8fafc;
+            /* slate-50 */
+        }
+
+        .grid-input:focus {
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 0 0 1px var(--primary);
+        }
+
+        .resizer {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            z-index: 60;
+            transition: background 0.2s;
+            border-right: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .resizer:hover {
+            background: var(--primary);
+            width: 6px;
+        }
+
+        .num-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .num-btn.qty {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.35);
+            color: rgba(238, 242, 255, 1);
+        }
+
+        .num-btn.prc {
+            background: rgba(250, 204, 21, 0.18);
+            border-color: rgba(250, 204, 21, 0.35);
+            color: rgba(51, 65, 85, 1);
+        }
+
+        .num-btn:active {
+            transform: scale(0.96);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .active-mode {
+            background: var(--primary) !important;
+            color: white !important;
+        }
+
+        .payment-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 14px 6px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            flex: 1;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .payment-pill.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .no-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .total-input {
+            background: transparent;
+            border: none;
+            width: 100%;
+            color: white;
+            font-weight: 800;
+            outline: none;
+            padding: 0;
+            margin: 0;
+            display: block;
+        }
+
+        .total-input:focus {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .status-toggle {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-btn {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .active-cash {
+            background: #10b981 !important;
+            color: white !important;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .active-credit {
+            background: #f59e0b !important;
+            color: white !important;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .search-results-container {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-result-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-result-item:hover {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item .product-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-result-item .product-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .search-result-item .product-meta {
+            font-size: 10px;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        .search-result-item .product-price {
+            font-weight: 800;
+            color: #10b981;
+            font-size: 13px;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .header-btn:active {
+            transform: scale(0.9);
+        }
+
+        #internal-sales-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: var(--bg-primary);
+        }
+
+        #internal-sales-view.hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="overflow-hidden">
+
+    <div class="pos-grid">
+        <div class="flex flex-col gap-3 h-full overflow-hidden">
+            <div class="glass-panel p-2.5 grid grid-cols-3 gap-4 shrink-0 shadow-sm relative z-10">
+                <div class="flex flex-col gap-1.5">
+                    <span class="text-[9.5px] uppercase tracking-tighter text-slate-500 font-black">Shop /
+                        Customer</span>
+                    <select id="warehouse-id" onchange="app.handleWarehouseChange(this.value)"
+                        class="text-[12px] bg-slate-900/80 border border-white/5 rounded-md px-2 py-1.5 w-full text-white font-bold outline-none focus:border-indigo-500/30 transition-all">
+                        <option value="">Select Shop...</option>
+                    </select>
+                    <select id="customer-id"
+                        class="text-[12px] bg-slate-900/80 border border-white/5 rounded-md px-2 py-1.5 w-full text-white font-bold outline-none focus:border-indigo-500/30 transition-all">
+                        <option value="">Select Customer...</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <span class="text-[9.5px] uppercase tracking-tighter text-slate-500 font-black">Invoice /
+                        Counter</span>
+                    <input type="text" id="voucher" value="---" readonly
+                        class="text-[12px] bg-slate-900/80 border border-white/5 rounded-md px-2 py-1.5 w-full text-indigo-300 font-black outline-none cursor-default">
+                    <select id="counter"
+                        class="text-[12px] bg-slate-900/80 border border-white/5 rounded-md px-2 py-1.5 w-full text-white font-bold outline-none focus:border-indigo-500/30 transition-all">
+                        <option value="">Select User...</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center pr-1">
+                        <span class="text-[9.5px] uppercase tracking-tighter text-slate-500 font-black">Date /
+                            Table</span>
+                        <div class="flex gap-1.5">
+                            <button onclick="app.toggleFullScreen()" class="header-btn" title="Full Screen">
+                                <i class="fas fa-expand text-[10px]"></i>
+                            </button>
+                            <button onclick="app.handleLogout()" class="header-btn text-pink-500/80 hover:text-pink-400"
+                                title="Log Out">
+                                <i class="fas fa-power-off text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="text" id="date" readonly
+                        class="text-[12px] bg-slate-900/80 border border-white/5 rounded-md px-2 py-1.5 w-full text-white/80 font-bold outline-none cursor-default">
+                    <input type="text" id="table" placeholder="Table No"
+                        class="text-[12px] bg-slate-900/80 border border-white/5 rounded-md px-2 py-1.5 w-full text-white font-bold outline-none focus:border-indigo-500/30 transition-all">
+                </div>
+            </div>
+
+            <div class="flex items-stretch gap-3 shrink-0">
+                <div class="glass-panel p-2 flex items-center gap-2 flex-1 relative z-20">
+                    <div class="bg-indigo-500/15 p-1.5 rounded-lg shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-indigo-400" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="search-input"
+                        class="bg-transparent border-none p-0 text-sm font-medium w-full outline-none"
+                        placeholder="Search item..." oninput="app.handleSearchInput(this.value)">
+                    <div id="search-results" class="search-results-container no-scrollbar"></div>
+                </div>
+
+                <div class="glass-panel p-2 flex flex-col gap-1 items-center px-4 justify-center">
+                    <span class="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Transaction
+                        Type</span>
+                    <div class="status-toggle">
+                        <div id="status-cash" class="status-btn active-cash" onclick="app.setTransactionStatus('cash')">
+                            CASH</div>
+                        <div id="status-credit" class="status-btn" onclick="app.setTransactionStatus('credit')">CREDIT
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel overflow-hidden flex flex-col flex-1">
+                <div class="overflow-y-auto flex-1 no-scrollbar overflow-x-hidden" id="cart-scroll-container">
+                    <table class="cart-table w-full" id="cart-table">
+                        <thead>
+                            <tr class="relative">
+                                <th width="35" class="relative">#<div class="resizer" data-idx="0"></div>
+                                </th>
+                                <th width="70" class="relative">Code<div class="resizer" data-idx="1"></div>
+                                </th>
+                                <th width="200" class="relative">Description<div class="resizer" data-idx="2"></div>
+                                </th>
+                                <th width="55" class="relative text-center">Qty<div class="resizer" data-idx="3"></div>
+                                </th>
+                                <th width="55" class="relative text-center">Unit<div class="resizer" data-idx="4"></div>
+                                </th>
+                                <th width="85" class="relative text-right">Price<div class="resizer" data-idx="5"></div>
+                                </th>
+                                <th width="70" class="relative text-right">Discount<div class="resizer" data-idx="6">
+                                    </div>
+                                </th>
+                                <th width="120" class="relative text-right">Total<div class="resizer" data-idx="7">
+                                    </div>
+                                </th>
+                                <th width="40" class="text-center">Del</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-items-container"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="glass-panel p-3 grid grid-cols-12 gap-4 shrink-0">
+                <div class="col-span-4 space-y-3">
+                    <div class="flex justify-between items-center gap-3">
+                        <span class="text-[12px] font-black text-slate-500 shrink-0 uppercase tracking-tight">Tax
+                            %</span>
+                        <div class="flex items-center gap-1 flex-1 max-w-[160px]">
+                            <button
+                                class="bg-white/5 hover:bg-white/10 w-8 h-10 rounded-l-lg border border-white/5 text-slate-400 font-bold active:scale-90 transition-all"
+                                onclick="app.changeValue('tax-input', -1)">-</button>
+                            <input type="number" id="tax-input" value="0" inputmode="none"
+                                class="w-full h-10 text-center text-lg font-black bg-slate-900/60 border-y border-white/5 text-white outline-none"
+                                oninput="app.calculateTotals()">
+                            <button
+                                class="bg-white/5 hover:bg-white/10 w-8 h-10 rounded-r-lg border border-white/5 text-slate-400 font-bold active:scale-90 transition-all"
+                                onclick="app.changeValue('tax-input', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center gap-3">
+                        <div class="flex items-center gap-1 shrink-0">
+                            <span class="text-[12px] font-black text-slate-500 uppercase tracking-tight">Discount</span>
+                            <select id="discount-type"
+                                class="bg-transparent border-none p-0 text-[10px] font-black text-indigo-400 focus:ring-0 w-8 cursor-pointer"
+                                onchange="app.calculateTotals()">
+                                <option value="cash" class="bg-slate-900">$</option>
+                                <option value="percent" class="bg-slate-900">%</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1 flex-1 max-w-[160px]">
+                            <button
+                                class="bg-white/5 hover:bg-white/10 w-8 h-10 rounded-l-lg border border-white/5 text-slate-400 font-bold active:scale-90 transition-all"
+                                onclick="app.changeValue('discount-input', -1)">-</button>
+                            <input type="number" id="discount-input" value="0" inputmode="none"
+                                class="w-full h-10 text-center text-lg font-black bg-slate-900/60 border-y border-white/5 text-white outline-none"
+                                oninput="app.calculateTotals()">
+                            <button
+                                class="bg-white/5 hover:bg-white/10 w-8 h-10 rounded-r-lg border border-white/5 text-slate-400 font-bold active:scale-90 transition-all"
+                                onclick="app.changeValue('discount-input', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-span-4 border-l border-white/5 pl-4">
+                    <div class="flex flex-col gap-1.5 h-full">
+                        <span class="text-[11px] font-bold text-slate-400">SHIPPING</span>
+                        <input type="number" id="shipping-input" value="0" inputmode="none"
+                            class="w-full text-right text-lg font-bold bg-slate-900/60 border border-white/5 rounded px-3 py-2 text-indigo-400 outline-none"
+                            oninput="app.calculateTotals()">
+                    </div>
+                </div>
+                <div class="col-span-4 flex flex-col border-l border-white/5 pl-4">
+                    <span class="text-[11px] font-bold text-slate-400 mb-1.5">NOTES</span>
+                    <textarea id="remark"
+                        class="flex-1 text-[9px] resize-none bg-slate-900/40 p-2 rounded outline-none border border-white/5 focus:border-indigo-500/30 transition-all"
+                        placeholder="Add transaction note..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3 h-full overflow-hidden">
+            <div class="glass-panel p-2 grid grid-cols-4 gap-2 shrink-0">
+                <button
+                    class="bg-indigo-500/20 py-2 rounded-lg text-[10.5px] font-black border border-indigo-500/20 hover:bg-indigo-500/30 transition-all active:scale-95 text-indigo-200"
+                    onclick="app.actionHold()">HOLD</button>
+                <button
+                    class="bg-slate-700/30 py-2 rounded-lg text-[10.5px] font-black border border-white/5 hover:bg-slate-700/50 transition-all active:scale-95 text-slate-200"
+                    onclick="app.actionHoldList()">HOLD LIST</button>
+                <button
+                    class="bg-red-500/20 text-red-200 py-2 rounded-lg text-[10.5px] font-black border border-red-500/20 hover:bg-red-500/30 transition-all active:scale-95"
+                    onclick="app.clearCart()">DELETE</button>
+                <button
+                    class="bg-emerald-500/20 text-emerald-200 py-2 rounded-lg text-[10.5px] font-black border border-emerald-500/20 hover:bg-emerald-500/30 transition-all active:scale-95"
+                    onclick="app.actionSales()">SALES</button>
+            </div>
+
+            <div class="glass-panel p-3 space-y-3 shrink-0 bg-gradient-to-br from-slate-800/20 to-indigo-900/10">
+                <div class="space-y-2">
+                    <div class="flex justify-between items-end gap-4">
+                        <!-- Left: Grand Total -->
+                        <div class="flex-1">
+                            <span class="text-[11px] text-slate-400 font-bold uppercase block mb-1">Grand Total</span>
+                            <div class="flex items-baseline gap-1 text-4xl font-extrabold text-white">
+                                <span class="text-2xl text-slate-500">$</span>
+                                <input type="text" id="display-grand-total" value="0.00" inputmode="none"
+                                    class="total-input text-4xl w-full bg-transparent border-none outline-none p-0 text-white font-black leading-none"
+                                    oninput="app.calculateTotals()">
+                            </div>
+                        </div>
+
+                        <!-- Right: Subtotal & Discount Stack -->
+                        <div class="flex flex-col items-end gap-2 shrink-0 text-right pb-1">
+                            <div class="flex flex-col items-end leading-tight">
+                                <span
+                                    class="text-[9px] text-slate-600 font-black uppercase tracking-wide">Subtotal</span>
+                                <span class="text-[11px] font-bold text-slate-400" id="display-subtotal">$0.00</span>
+                            </div>
+                            <div class="flex flex-col items-end leading-tight">
+                                <span
+                                    class="text-[9px] text-pink-500/60 font-black uppercase tracking-wide">Discount</span>
+                                <span class="text-[11px] font-bold text-pink-400"
+                                    id="display-total-discount">-$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-white/10 space-y-2">
+                    <div id="standard-paid-row">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] text-slate-400 font-bold">PAID</span>
+                            <div class="flex items-center gap-1 text-xl font-bold text-emerald-400 w-1/2">
+                                <input type="text" id="display-paid" value="0.00" inputmode="none"
+                                    class="total-input text-right text-emerald-400"
+                                    oninput="app.handleTotalEdit('paid')">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="split-pay-panel" class="hidden space-y-2 pt-1 border-t border-white/5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] text-slate-500 font-black uppercase">CASH</span>
+                            <input type="number" id="split-cash-input" value="0.00" inputmode="none"
+                                class="w-1/2 bg-white/5 border border-white/5 rounded px-2 py-1 text-sm text-right text-white font-bold outline-none focus:border-indigo-500/50"
+                                oninput="app.updateSplitAmount('Cash', this.value)">
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <select id="split-secondary-method"
+                                class="bg-transparent border-none text-[9px] text-slate-500 font-black uppercase outline-none"
+                                onchange="app.updateSecondaryMethod(this.value)">
+                                <option value="K-Pay">K-PAY</option>
+                                <option value="Wave">WAVE</option>
+                                <option value="Card">CARD</option>
+                            </select>
+                            <input type="number" id="split-secondary-input" value="0.00" inputmode="none"
+                                class="w-1/2 bg-white/5 border border-white/5 rounded px-2 py-1 text-sm text-right text-white font-bold outline-none focus:border-indigo-500/50"
+                                oninput="app.updateSplitAmount('secondary', this.value)">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center border-t border-white/5 mt-1 pt-1">
+                        <span class="text-[11px] text-slate-400 font-bold">CHANGE</span>
+                        <div class="flex items-center gap-1 text-xl font-bold text-pink-400 w-1/2">
+                            <input type="text" id="display-refund" value="0.00" inputmode="none"
+                                class="total-input text-right text-pink-400" oninput="app.handleTotalEdit('refund')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-3 flex flex-col flex-1 gap-3 overflow-hidden">
+                <div class="grid grid-cols-3 gap-1 flex-1" id="numpad-container"></div>
+                <div class="shrink-0 space-y-1">
+                    <span class="text-[8px] font-black text-slate-500 uppercase px-1">Payment Method</span>
+                    <div class="flex gap-1 px-1" id="payment-methods-container"></div>
+                </div>
+                <div class="shrink-0 flex gap-2 pb-1">
+                    <button
+                        class="flex-1 bg-slate-700 hover:bg-slate-600 py-2.5 rounded-lg font-black text-[11px] shadow-lg shadow-slate-900/40 transition-all uppercase tracking-tight"
+                        onclick="app.finalizeSale(false)">
+                        Confirm Only
+                    </button>
+                    <button
+                        class="flex-[1.5] bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg font-black text-[11px] shadow-lg shadow-indigo-500/20 transition-all uppercase tracking-tight"
+                        onclick="app.finalizeSale(true)">
+                        Confirm & Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="config.js"></script>
+        <script src="js/supabase-client.js"></script>
+        <script src="js/app-config.js"></script>
+        <script src="js/receipt-printer.js"></script>
+
+        <script>
+            const app = {
+                state: {
+                    cart: [],
+                    allProducts: [],
+                    warehouses: [],
+                    customers: [],
+                    currentInput: "0",
+                    inputMode: "pay",
+                    selectedItemIndex: -1,
+                    transactionStatus: 'cash',
+                    paymentMethod: 'Cash',
+                    cashierName: '-',
+                    paymentSplits: { Cash: 0, secondary: 0 },
+                    secondaryMethod: 'K-Pay',
+                    activeSplitField: 'Cash',
+                    manualPaid: false,
+                    lastTap: 0,
+                    resetNextInput: false,
+                    activeHeaderField: null,
+                    restoringFocus: false,
+                    promotions: [],
+                    unitMap: {},
+                    editingSaleId: null
+                },
+
+                getUnitShort(unitId) {
+                    if (!unitId || !this.state.unitMap[unitId]) return 'Pc';
+                    return this.state.unitMap[unitId].short_name || 'Pc';
+                },
+
+                async init() {
+                    this.updateClock();
+                    this.buildNumpad();
+                    this.buildPaymentMethods();
+                    this.setupListeners();
+                    this.setupResizers();
+
+                    // Global Focus Synchronization
+                    document.addEventListener('focusin', (e) => {
+                        const el = e.target;
+                        if (this.state.restoringFocus) return;
+
+                        // Identify all editable fields (inputs and textareas)
+                        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                            // 1. Grid inputs
+                            if (el.classList.contains('grid-input')) {
+                                const idx = parseInt(el.dataset.idx);
+                                const field = el.dataset.field;
+                                if (!isNaN(idx) && field) {
+                                    this.state.selectedItemIndex = idx;
+                                    this.state.inputMode = field;
+                                    this.state.activeHeaderField = null;
+                                    this.state.activeSplitField = null;
+                                    this.state.resetNextInput = true;
+                                    this.state.currentInput = el.value || "0";
+                                    this.renderCartHighlight(idx);
+                                }
+                            }
+                            // 2. Everything else (Header, Split, Search, Notes, etc.)
+                            else {
+                                this.state.activeHeaderField = el.id || null;
+                                this.state.inputMode = el.id && (el.id.startsWith('split-')) ? 'pay' : 'header';
+
+                                if (el.id && (el.id === 'split-cash-input' || el.id === 'split-secondary-input')) {
+                                    this.state.activeSplitField = el.id === 'split-cash-input' ? 'Cash' : 'secondary';
+                                } else {
+                                    this.state.activeSplitField = null;
+                                }
+
+                                this.state.selectedItemIndex = -1;
+                                this.state.resetNextInput = true;
+                                this.state.currentInput = el.value || "0";
+                                this.renderCart(); // Clear cart highlight
+                            }
+                        }
+                    });
+
+                    if (window.supabase) {
+                        await this.fetchPromotions();
+                        await this.fetchReferenceData();
+                        await this.generateVoucherNo();
+
+                        // Do not fetch products until a warehouse is selected
+                        const whId = document.getElementById('warehouse-id').value;
+                        if (whId) {
+                            await this.fetchProducts(whId);
+                        }
+
+                        // Check for transactionId in URL (for editing via switchView)
+                        const params = new URLSearchParams(window.location.search);
+                        const transactionId = params.get('transactionId');
+                        if (transactionId) {
+                            console.log("Loading transaction from URL:", transactionId);
+                            // Wait a bit for initial data to be ready
+                            setTimeout(() => this.editSale(transactionId), 500);
+                        }
+                    }
+
+                    this.calculateTotals();
+                    this.checkFullScreenState();
+                },
+
+                handleLogout() {
+                    const confirmLogout = confirm('Are you sure you want to log out?');
+                    if (confirmLogout) {
+                        if (window.supabase) {
+                            window.supabase.auth.signOut().then(() => {
+                                window.location.href = 'index.html';
+                            });
+                        } else {
+                            window.location.href = 'index.html';
+                        }
+                    }
+                },
+
+                toggleFullScreen() {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                        });
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        }
+                    }
+                },
+
+                checkFullScreenState() {
+                    document.addEventListener('fullscreenchange', () => {
+                        const btn = document.querySelector('button[onclick="app.toggleFullScreen()"] i');
+                        if (btn) {
+                            if (document.fullscreenElement) {
+                                btn.classList.replace('fa-expand', 'fa-compress');
+                            } else {
+                                btn.classList.replace('fa-compress', 'fa-expand');
+                            }
+                        }
+                    });
+                },
+
+                async fetchPromotions() {
+                    try {
+                        const { data, error } = await supabase
+                            .from('promotions')
+                            .select('*')
+                            .eq('is_active', true);
+                        if (error) throw error;
+                        this.state.promotions = data || [];
+                    } catch (e) {
+                        console.error('Error fetching promotions:', e);
+                    }
+                },
+
+                updateClock() {
+                    const update = () => {
+                        const now = new Date();
+                        const day = String(now.getDate()).padStart(2, '0');
+                        const mon = now.toLocaleString('en-US', { month: 'short' });
+                        document.getElementById('date').value = day + '-' + mon + '-' + now.getFullYear();
+                    };
+                    update();
+                    setInterval(update, 60000);
+                },
+
+                async fetchProducts(warehouseId) {
+                    if (!warehouseId) {
+                        this.state.allProducts = [];
+                        return;
+                    }
+                    try {
+                        console.log(`Fetching products for warehouse: ${warehouseId}...`);
+                        let allData = [];
+                        let from = 0;
+                        let pageSize = 1000;
+                        let hasMore = true;
+
+                        while (hasMore) {
+                            // Join products with product_warehouses to get specific warehouse stock
+                            const { data, error } = await supabase
+                                .from('products')
+                                .select(`
+                                    id, name, code, item_code, barcodes, price, box_price, image_url, discount, unit, unit_id, pcs_per_box,
+                                    product_warehouses!inner(stock)
+                                `)
+                                .eq('product_warehouses.warehouse_id', warehouseId)
+                                .range(from, from + pageSize - 1);
+
+                            if (error) throw error;
+
+                            if (data && data.length > 0) {
+                                // Flatten the structure to match the existing search logic
+                                const flattened = data.map(p => ({
+                                    ...p,
+                                    stock: p.product_warehouses[0]?.stock || 0
+                                }));
+                                allData = allData.concat(flattened);
+                                from += pageSize;
+                                console.log(`Loaded ${allData.length} products for this warehouse...`);
+                            } else {
+                                hasMore = false;
+                            }
+
+                            if (data.length < pageSize) hasMore = false;
+                        }
+
+                        this.state.allProducts = allData;
+                        console.log('Product fetch complete. Total products for warehouse:', this.state.allProducts.length);
+
+                        // We don't cache locally for specific warehouses to avoid complex cache invalidation,
+                        // but we keep allProducts in memory for fast searching.
+                    } catch (e) {
+                        console.error('Error in fetchProducts:', e);
+                        alert('Error loading products for this shop: ' + e.message);
+                    }
+                },
+
+                async handleWarehouseChange(val) {
+                    this.state.allProducts = [];
+                    document.getElementById('search-input').value = '';
+                    document.getElementById('search-results').classList.remove('active');
+
+                    const searchInput = document.getElementById('search-input');
+                    if (val) {
+                        searchInput.placeholder = "Search products (Name, Code, Barcode)...";
+                        await this.fetchProducts(val);
+                    } else {
+                        searchInput.placeholder = "Select Shop first...";
+                    }
+                    this.calculateTotals();
+                },
+
+
+                async fetchReferenceData() {
+                    try {
+                        const { data: units } = await supabase.from('units').select('id, name, short_name');
+                        if (units) {
+                            units.forEach(u => {
+                                this.state.unitMap[u.id] = u;
+                            });
+                        }
+
+                        const { data: wh } = await supabase.from('warehouses').select('id, name').order('name');
+                        this.state.warehouses = wh || [];
+                        const whSelect = document.getElementById('warehouse-id');
+                        whSelect.innerHTML = '<option value="">Select Shop...</option>' +
+                            this.state.warehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+
+                        const { data: cust } = await supabase.from('customers').select('id, name').order('name');
+                        this.state.customers = cust || [];
+                        const custSelect = document.getElementById('customer-id');
+                        custSelect.innerHTML = '<option value="">Select Customer...</option>' +
+                            this.state.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+                        // Populate Counter (User) dropdown from user_profiles view
+                        const { data: users } = await supabase.from('user_profiles').select('user_id, display_name, role');
+                        const counterSelect = document.getElementById('counter');
+                        if (users && users.length > 0) {
+                            counterSelect.innerHTML = '<option value="">Select User...</option>' +
+                                users.map(u => `<option value="${u.user_id}">${u.display_name} (${u.role})</option>`).join('');
+                        }
+
+                        // Auto-detect and pre-select the currently logged-in user
+                        const { data: { user: authUser } } = await supabase.auth.getUser();
+                        if (authUser) {
+                            counterSelect.value = authUser.id;
+                            // Set cashier name from selected option
+                            const sel = counterSelect.options[counterSelect.selectedIndex];
+                            if (sel) {
+                                this.state.cashierName = sel.text.split(' (')[0];
+                            }
+                            // Lock the dropdown if user is not an admin so they can't change it
+                            const currentRole = window.AppPermissions ? window.AppPermissions.getRole() : '';
+                            if (currentRole !== 'admin') {
+                                counterSelect.disabled = true;
+                                counterSelect.title = 'Assigned to your logged-in account';
+                            }
+                        }
+                    } catch (e) { console.error('Error fetching reference data:', e); }
+                },
+
+                async generateVoucherNo() {
+                    try {
+                        const now = new Date();
+                        const dd = String(now.getDate()).padStart(2, '0');
+                        const mm = String(now.getMonth() + 1).padStart(2, '0');
+                        const yy = String(now.getFullYear()).slice(-2);
+                        const datePart = `${dd}${mm}${yy}`;
+                        const prefix = 'SA'; // User explicitly requested SA
+                        const searchPrefix = `${prefix}-${datePart}-`;
+
+                        const { data } = await supabase.from('transactions')
+                            .select('voucher_no')
+                            .like('voucher_no', `${searchPrefix}%`)
+                            .order('voucher_no', { ascending: false })
+                            .limit(1);
+
+                        let nextNum = 1;
+                        if (data && data.length > 0 && data[0].voucher_no) {
+                            const parts = data[0].voucher_no.split('-');
+                            const lastPart = parts[parts.length - 1];
+                            const currentNum = parseInt(lastPart);
+                            if (!isNaN(currentNum)) {
+                                nextNum = currentNum + 1;
+                            }
+                        }
+
+                        const numStr = nextNum.toString().padStart(4, '0');
+                        document.getElementById('voucher').value = `${searchPrefix}${numStr}`;
+                    } catch (e) { 
+                        console.error('Voucher Gen Error:', e);
+                        // Fallback
+                        const fallbackId = Date.now().toString().slice(-6);
+                        document.getElementById('voucher').value = `SA-ERR-${fallbackId}`;
+                    }
+                },
+
+                buildNumpad() {
+                    const keys = [
+                        { l: '1' }, { l: '2' }, { l: '3' },
+                        { l: '4' }, { l: '5' }, { l: '6' },
+                        { l: '7' }, { l: '8' }, { l: '9' },
+                        { l: 'C', c: 'text-pink-500', type: 'clear' }, { l: '0' }, { l: 'ABC', type: 'abc' },
+                        { l: 'QTY', m: 'qty', id: 'mode-qty', cls: 'qty' }, { l: 'PRC', m: 'price', id: 'mode-price', cls: 'prc' }, { l: 'ENTER', type: 'enter' }
+                    ];
+                    const container = document.getElementById('numpad-container');
+                    container.innerHTML = keys.map(k => `
+                    <div class="num-btn ${k.c || ''} ${k.cls || ''} ${k.active ? 'active-mode' : ''}" 
+                         id="${k.id || ''}" onclick="app.handleInput('${k.type || 'num'}', '${k.l}', '${k.m || ''}')">
+                        ${k.l}
+                    </div>
+                `).join('');
+                },
+
+                buildPaymentMethods() {
+                    const methods = ['Cash', 'K-Pay', 'Wave', 'Multi'];
+                    const container = document.getElementById('payment-methods-container');
+                    if (!container) return;
+                    container.innerHTML = methods.map(m => `
+                    <div class="payment-pill ${this.state.paymentMethod === m ? 'active' : ''}" onclick="app.setPaymentMethod('${m}', this)">
+                        ${m}
+                    </div>
+                `).join('');
+                },
+
+                setPaymentMethod(method, el) {
+                    this.state.paymentMethod = method;
+                    const splitPanel = document.getElementById('split-pay-panel');
+                    const standardRow = document.getElementById('standard-paid-row');
+                    if (method === 'Multi') {
+                        if (splitPanel) splitPanel.classList.remove('hidden');
+                        if (standardRow) standardRow.classList.add('hidden');
+                        this.setSplitFocus('Cash');
+                    } else {
+                        if (splitPanel) splitPanel.classList.add('hidden');
+                        if (standardRow) standardRow.classList.remove('hidden');
+                        this.state.paymentSplits = { Cash: 0, secondary: 0 };
+                        const paidEl = document.getElementById('display-paid');
+                        if (paidEl) paidEl.focus();
+                    }
+                    this.buildPaymentMethods();
+                    this.calculateTotals();
+                },
+
+                setSplitFocus(field) {
+                    const id = field === 'Cash' ? 'split-cash-input' : 'split-secondary-input';
+                    const el = document.getElementById(id);
+                    if (el) el.focus();
+
+                    document.getElementById('split-cash-input')?.classList.toggle('border-indigo-500/50', field === 'Cash');
+                    document.getElementById('split-secondary-input')?.classList.toggle('border-indigo-500/50', field === 'secondary');
+                },
+
+                focusHeader(id) {
+                    const el = document.getElementById(id);
+                    if (el) el.focus();
+                },
+
+                focusCart(idx, field) {
+                    if (this.state.restoringFocus) return;
+                    const input = document.querySelector(`input[data-idx="${idx}"][data-field="${field}"]`);
+                    if (input) input.focus();
+                },
+
+                updateSecondaryMethod(method) {
+                    this.state.secondaryMethod = method;
+                    this.calculateTotals();
+                },
+
+                updateSplitAmount(field, val) {
+                    const num = parseFloat(val) || 0;
+                    this.state.paymentSplits[field] = num;
+                    const total = parseFloat(document.getElementById('display-grand-total').value) || 0;
+                    if (field === 'Cash') {
+                        const remainder = Math.max(0, total - num);
+                        this.state.paymentSplits.secondary = remainder;
+                        const secInput = document.getElementById('split-secondary-input');
+                        if (secInput) secInput.value = remainder.toFixed(2);
+                    } else if (field === 'secondary') {
+                        const remainder = Math.max(0, total - num);
+                        this.state.paymentSplits.Cash = remainder;
+                        const cashInput = document.getElementById('split-cash-input');
+                        if (cashInput) cashInput.value = remainder.toFixed(2);
+                    }
+                    const totalPaid = this.state.paymentSplits.Cash + this.state.paymentSplits.secondary;
+                    const actualPaid = (field === 'Cash' && num > total) ? num : totalPaid;
+                    document.getElementById('display-paid').value = actualPaid.toFixed(2);
+                    this.state.manualPaid = true;
+                    this.calculateTotals();
+                },
+
+                setupResizers() {
+                    const table = document.getElementById('cart-table');
+                    document.querySelectorAll('.resizer').forEach(resizer => {
+                        resizer.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            const th = resizer.closest('th');
+                            const nextTh = th.nextElementSibling;
+                            if (!nextTh) return;
+                            const startX = e.pageX;
+                            const startWidth = th.offsetWidth;
+                            const nextStartWidth = nextTh.offsetWidth;
+                            const totalWidth = table.offsetWidth;
+                            const onMove = (moveEvent) => {
+                                const currentX = moveEvent.pageX;
+                                const diffX = currentX - startX;
+                                const newWidth = Math.max(startWidth + diffX, 30);
+                                const newNextWidth = Math.max(nextStartWidth - diffX, 30);
+                                th.style.width = (newWidth / totalWidth * 100) + '%';
+                                nextTh.style.width = (newNextWidth / totalWidth * 100) + '%';
+                            };
+                            const onEnd = () => {
+                                document.removeEventListener('mousemove', onMove);
+                                document.removeEventListener('mouseup', onEnd);
+                            };
+                            document.addEventListener('mousemove', onMove);
+                            document.addEventListener('mouseup', onEnd);
+                        });
+                    });
+                },
+
+                handleInput(type, val, mode = '') {
+                    if (type === 'abc') {
+                        const search = document.getElementById('search-input');
+                        if (search) { search.value = ''; search.focus(); }
+                        return;
+                    }
+                    if (type === 'enter') { this.nextFocus(); return; }
+
+                    if (mode) {
+                        this.state.inputMode = mode;
+                        this.state.activeHeaderField = null;
+                        this.state.activeSplitField = null;
+                        document.querySelectorAll('.active-mode').forEach(b => b.classList.remove('active-mode'));
+                        const btn = document.getElementById(`mode-${mode}`);
+                        if (btn) btn.classList.add('active-mode');
+
+                        this.state.currentInput = "0";
+                        this.state.resetNextInput = true;
+
+                        if (['qty', 'price', 'disc'].includes(mode)) {
+                            if (this.state.selectedItemIndex === -1 && this.state.cart.length > 0) {
+                                this.state.selectedItemIndex = this.state.cart.length - 1;
+                            }
+                            this.renderCart();
+                        }
+                        return;
+                    }
+
+                    // Numeric/Value logic
+                    if (type === 'clear') this.state.currentInput = "0";
+                    else if (type === 'backspace') {
+                        this.state.currentInput = this.state.currentInput.length > 1 ? this.state.currentInput.slice(0, -1) : "0";
+                    }
+                    else if (type === 'decimal' || val === '.') {
+                        if (!this.state.currentInput.includes('.')) this.state.currentInput += '.';
+                    } else {
+                        if (this.state.resetNextInput) {
+                            this.state.currentInput = val;
+                            this.state.resetNextInput = false;
+                        } else {
+                            if (this.state.currentInput === "0" && val !== '.') this.state.currentInput = val;
+                            else this.state.currentInput += val;
+                        }
+                    }
+
+                    // TARGET RESOLUTION: Strictly follow the active cursor/focus
+                    const activeEl = document.activeElement;
+                    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                        targetEl = activeEl;
+                    }
+                    // ONLY fallback if no target is focused AND we have a deliberate state
+                    else if (this.state.activeHeaderField) {
+                        targetEl = document.getElementById(this.state.activeHeaderField);
+                    }
+                    else if (this.state.activeSplitField) {
+                        const id = this.state.activeSplitField === 'Cash' ? 'split-cash-input' : 'split-secondary-input';
+                        targetEl = document.getElementById(id);
+                    }
+                    else if (this.state.selectedItemIndex > -1) {
+                        targetEl = document.querySelector(`input[data-idx="${this.state.selectedItemIndex}"][data-field="${this.state.inputMode}"]`);
+                    }
+
+                    if (targetEl) {
+                        targetEl.value = this.state.currentInput;
+
+                        // Trigger specific handlers
+                        if (targetEl.classList.contains('grid-input')) {
+                            // Use updateCartItem for consistent box price and UI sync logic
+                            this.updateCartItem(this.state.selectedItemIndex, this.state.inputMode, this.state.currentInput);
+                            // Ensure the value stays synced if updateCartItem didn't refresh it
+                            targetEl.value = this.state.currentInput;
+                        } else if (targetEl.id && targetEl.id.startsWith('split-')) {
+                            this.updateSplitAmount(this.state.activeSplitField, this.state.currentInput);
+                        } else if (targetEl.oninput) {
+                            targetEl.oninput();
+                        } else {
+                            this.calculateTotals();
+                        }
+                    }
+                },
+
+                nextFocus() {
+                    const cartModes = ['qty', 'price', 'disc'];
+                    const footerInputs = ['tax-input', 'discount-input', 'shipping-input', 'display-paid'];
+
+                    const focusAndSelect = (el) => {
+                        if (el) {
+                            el.focus();
+                            if (typeof el.select === 'function') el.select();
+                        }
+                    };
+
+                    // 1. If we are in the cart grid
+                    if (this.state.selectedItemIndex > -1) {
+                        let currentModeIdx = cartModes.indexOf(this.state.inputMode);
+                        if (currentModeIdx < cartModes.length - 1) {
+                            // Move to next column in current row
+                            const nextField = cartModes[currentModeIdx + 1];
+                            focusAndSelect(document.querySelector(`input[data-idx="${this.state.selectedItemIndex}"][data-field="${nextField}"]`));
+                        } else {
+                            // End of row: move to next item QTY, or if last item, move to footer
+                            if (this.state.selectedItemIndex < this.state.cart.length - 1) {
+                                const nextIdx = this.state.selectedItemIndex + 1;
+                                focusAndSelect(document.querySelector(`input[data-idx="${nextIdx}"][data-field="qty"]`));
+                            } else {
+                                // Move to Footer: Tax
+                                this.state.selectedItemIndex = -1;
+                                this.renderCart();
+                                focusAndSelect(document.getElementById('tax-input'));
+                            }
+                        }
+                        return;
+                    }
+
+                    // 2. If we are in the footer
+                    let activeId = document.activeElement?.id;
+
+                    // Fallback: If focus is lost (e.g. Numpad click), use stored state
+                    if ((!activeId || !footerInputs.includes(activeId)) && this.state.activeHeaderField) {
+                        activeId = this.state.activeHeaderField;
+                    }
+
+                    const footerIdx = footerInputs.indexOf(activeId);
+                    if (footerIdx > -1) {
+                        if (footerIdx < footerInputs.length - 1) {
+                            focusAndSelect(document.getElementById(footerInputs[footerIdx + 1]));
+                        } else {
+                            // Cycle back to Search
+                            focusAndSelect(document.getElementById('search-input'));
+                        }
+                        return;
+                    }
+
+                    // 3. Fallback: If in Search or elsewhere
+                    if (this.state.cart.length > 0) {
+                        focusAndSelect(document.querySelector(`input[data-idx="0"][data-field="qty"]`));
+                    } else {
+                        focusAndSelect(document.getElementById('tax-input'));
+                    }
+                },
+
+                applyInput() {
+                    const numVal = parseFloat(this.state.currentInput) || 0;
+                    if (this.state.selectedItemIndex === -1) return;
+                    const item = this.state.cart[this.state.selectedItemIndex];
+                    if (this.state.inputMode === 'qty') item.qty = numVal;
+                    if (this.state.inputMode === 'price') item.price = numVal;
+                    if (this.state.inputMode === 'disc') item.disc = numVal;
+                    this.renderCart();
+                    this.calculateTotals();
+                },
+
+                setTransactionStatus(status) {
+                    this.state.transactionStatus = status;
+                    const total = parseFloat(document.getElementById('display-grand-total').value) || 0;
+                    const paidEl = document.getElementById('display-paid');
+                    if (status === 'cash') {
+                        if (paidEl) paidEl.value = total.toFixed(2);
+                        this.state.manualPaid = false;
+                        this.state.paymentMethod = 'Cash';
+                    } else if (status === 'credit') {
+                        if (paidEl) paidEl.value = "0.00";
+                        this.state.manualPaid = true;
+                        this.state.paymentMethod = 'Credit';
+                    }
+                    const cashBtn = document.getElementById('status-cash');
+                    const creditBtn = document.getElementById('status-credit');
+                    if (cashBtn) cashBtn.className = `status-btn ${status === 'cash' ? 'active-cash' : ''}`;
+                    if (creditBtn) creditBtn.className = `status-btn ${status === 'credit' ? 'active-credit' : ''}`;
+                    this.buildPaymentMethods();
+                    this.calculateTotals();
+                },
+
+                calculateTotals() {
+                    const subtotal = this.state.cart.reduce((sum, item) => {
+                        const effectiveQty = (item.selectedUnit === 'box') ? (item.qty * (item.pcs_per_box || 1)) : item.qty;
+                        return sum + (effectiveQty * item.price);
+                    }, 0);
+                    const itemDiscounts = this.state.cart.reduce((sum, item) => sum + (item.disc || 0), 0);
+                    const taxPercent = parseFloat(document.getElementById('tax-input')?.value) || 0;
+                    const discountVal = parseFloat(document.getElementById('discount-input')?.value) || 0;
+                    const discType = document.getElementById('discount-type')?.value;
+                    const shipping = parseFloat(document.getElementById('shipping-input')?.value) || 0;
+
+                    // --- PROMOTION LOGIC ---
+                    this.state.cart.forEach(item => {
+                        item.appliedPromotion = null;
+                        item.promoDisc = 0;
+                    });
+
+                    this.state.promotions.forEach(promo => {
+                        if (promo.type === 'SAVE AMOUNT' && subtotal >= (promo.min_purchase_amount || 0)) {
+                            // Apply to entire transaction or specific items? 
+                            // For now, let's stick to the simplest interpretation of the image:
+                            // "SAVE AMOUNT" often means a global or item-level discount.
+                            // If it's a global one, we'll mark the transaction.
+                            this.state.appliedGlobalPromo = promo;
+                        }
+
+                        // Example: "BUY 30000 KS GET ONE FREE" (BUY_GET)
+                        if (promo.type === 'BUY_GET') {
+                            const buyItem = this.state.cart.find(i => i.id === promo.buy_product_id);
+                            if (buyItem && buyItem.qty >= promo.buy_quantity) {
+                                buyItem.appliedPromotion = promo;
+                                // Logic to add the "GET" item for free if not present, or discount it
+                                // For now, we'll just mark it for the report.
+                            }
+                        }
+                    });
+
+                    let globalDiscount = discType === 'percent' ? ((subtotal - itemDiscounts) * discountVal / 100) : discountVal;
+                    const totalDiscount = itemDiscounts + globalDiscount;
+                    const taxedAmount = (subtotal - totalDiscount);
+                    const taxAmount = taxedAmount * taxPercent / 100;
+                    const total = taxedAmount + taxAmount + shipping;
+
+                    // Update summary row displays
+                    const subEl = document.getElementById('display-subtotal');
+                    if (subEl) subEl.textContent = `${Math.round(subtotal)}`;
+
+                    const discTotalEl = document.getElementById('display-total-discount');
+                    if (discTotalEl) discTotalEl.textContent = `-${Math.round(totalDiscount)}`;
+
+                    const gtDisplay = document.getElementById('display-grand-total');
+                    if (gtDisplay) gtDisplay.value = Math.round(total);
+
+                    const paidEl = document.getElementById('display-paid');
+                    let paid = parseFloat(paidEl?.value) || 0;
+
+                    if (this.state.transactionStatus === 'credit' && !this.state.manualPaid) paid = 0;
+                    else if (this.state.transactionStatus === 'cash' && !this.state.manualPaid) paid = total;
+
+                    if (paidEl && document.activeElement !== paidEl) paidEl.value = Math.round(paid);
+
+                    const refundEl = document.getElementById('display-refund');
+                    if (refundEl) {
+                        const change = paid - total;
+                        refundEl.value = (change >= 0 ? '+' : '') + Math.round(change);
+                    }
+
+                    if (this.state.paymentMethod === 'Multi') {
+                        const cash = this.state.paymentSplits.Cash;
+                        const remainder = Math.max(0, total - cash);
+                        this.state.paymentSplits.secondary = remainder;
+                        const secInput = document.getElementById('split-secondary-input');
+                        if (secInput) secInput.value = remainder.toFixed(2);
+                    }
+                },
+
+                changeValue(id, delta) {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    let val = parseFloat(el.value) || 0;
+                    val = Math.max(0, val + delta);
+                    el.value = val;
+                    this.calculateTotals();
+                },
+
+                handleTotalEdit(field) {
+                    this.state.manualPaid = true;
+                    this.calculateTotals();
+                },
+
+                renderCart() {
+                    const container = document.getElementById('cart-items-container');
+                    if (!container) return;
+                    container.innerHTML = this.state.cart.map((item, idx) => `
+                    <tr class="${this.state.selectedItemIndex === idx ? 'selected' : ''}" onclick="app.selectItem(${idx})">
+                        <td class="text-center text-slate-500 font-bold">${idx + 1}</td>
+                        <td class="font-mono text-[10px]">${item.code || '—'}</td>
+                        <td class="font-medium">
+                            ${item.name}
+                            ${item.appliedPromotion ? `<div class="text-[8px] text-emerald-400 font-bold mt-0.5 uppercase tracking-tighter bg-emerald-500/10 px-1 py-0.5 rounded inline-block">PROMO: ${item.appliedPromotion.name}</div>` : ''}
+                        </td>
+                        <td class="p-0"><input type="number" inputmode="none" data-idx="${idx}" data-field="qty" value="${item.qty}" class="grid-input font-bold text-center" oninput="app.updateCartItem(${idx}, 'qty', this.value)" onclick="event.stopPropagation();"></td>
+                        <td class="p-0">
+                            <select class="grid-input text-center text-[10px] font-bold bg-transparent" onchange="app.changeUnit(${idx}, this.value)" onclick="event.stopPropagation();">
+                                <option value="base" ${item.selectedUnit === 'base' || !item.selectedUnit ? 'selected' : ''}>${app.getUnitShort(item.unit_id)}</option>
+                                ${item.pcs_per_box > 1 ? `<option value="box" ${item.selectedUnit === 'box' ? 'selected' : ''}>Box (${item.pcs_per_box})</option>` : ''}
+                            </select>
+                        </td>
+                        <td class="p-0"><input type="number" inputmode="none" data-idx="${idx}" data-field="price" value="${Math.round(item.selectedUnit === 'box' ? (item.box_price || (item.price * (item.pcs_per_box || 1))) : item.price)}" class="grid-input text-right pr-2" oninput="app.updateCartItem(${idx}, 'price', this.value)" onclick="event.stopPropagation();"></td>
+                        <td class="p-0"><input type="number" inputmode="none" data-idx="${idx}" data-field="disc" value="${item.disc || 0}" class="grid-input text-right pr-2 text-red-500" oninput="app.updateCartItem(${idx}, 'disc', this.value)" onclick="event.stopPropagation();"></td>
+                        <td class="text-right font-black text-indigo-400 pr-2">${Math.round((((item.selectedUnit === 'box') ? item.qty * (item.box_price ? (item.box_price / (item.pcs_per_box || 1)) : item.price) : item.qty * item.price) - (item.disc || 0)))}</td>
+                        <td class="text-center p-0">
+                            <button onclick="app.removeFromCart(${idx})" class="text-red-500 hover:text-red-400 p-2 transition-colors" title="Remove Item">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                    if (this.state.selectedItemIndex > -1 && this.state.inputMode) {
+                        const input = document.querySelector(`input[data-idx="${this.state.selectedItemIndex}"][data-field="${this.state.inputMode}"]`);
+                        if (input) {
+                            this.state.restoringFocus = true;
+                            input.focus();
+                            if (typeof input.select === 'function') input.select();
+                            this.state.restoringFocus = false;
+                        }
+                    }
+                },
+
+                renderCartHighlight(idx) {
+                    this.state.selectedItemIndex = idx;
+                    document.querySelectorAll('#cart-items-container tr').forEach((tr, i) => {
+                        tr.classList.toggle('selected', i === idx);
+                    });
+                },
+
+                updateCartItem(idx, field, val) {
+                    const numVal = parseFloat(val) || 0;
+                    const item = this.state.cart[idx];
+                    
+                    if (field === 'price') {
+                        if (item.selectedUnit === 'box') {
+                            item.box_price = numVal;
+                            item.price = numVal / (item.pcs_per_box || 1);
+                        } else {
+                            item.price = numVal;
+                            item.base_price = numVal; // Update base price if literal piece price is edited
+                        }
+                    } else {
+                        item[field] = numVal;
+                    }
+                    this.state.currentInput = val;
+                    // Update only specific cells to avoid destructive full table re-render
+                    const row = document.querySelector(`#cart-items-container tr:nth-child(${idx + 1})`);
+                    if (row) {
+                        const item = this.state.cart[idx];
+                        const totalCell = row.cells[7];
+                        if (totalCell && item) {
+                            const effectiveQty = (item.selectedUnit === 'box') ? (item.qty * (item.pcs_per_box || 1)) : item.qty;
+                            const total = Math.round((effectiveQty * item.price) - (item.disc || 0));
+                            totalCell.textContent = total;
+                        }
+                    }
+                    this.calculateTotals();
+                },
+
+                changeUnit(idx, unitType) {
+                    const item = this.state.cart[idx];
+                    item.selectedUnit = unitType;
+
+                    if (unitType === 'box') {
+                        // Use box_price if available, otherwise fallback to calculated multiplication
+                        if (item.box_price && item.box_price > 0) {
+                            item.price = item.box_price / (item.pcs_per_box || 1);
+                        } else {
+                            // Traditional fallback: item.price remains base_price, so total = qty * pcs * price
+                            item.price = item.base_price;
+                        }
+                    } else {
+                        // Restore base price
+                        item.price = item.base_price;
+                    }
+
+                    this.renderCart();
+                    this.calculateTotals();
+                },
+
+                selectItem(idx) {
+                    this.state.selectedItemIndex = idx;
+                    if (!['qty', 'price', 'disc'].includes(this.state.inputMode)) {
+                        this.state.inputMode = 'qty';
+                    }
+                    this.state.currentInput = "0";
+                    this.state.resetNextInput = true;
+                    this.renderCart();
+                },
+
+                removeFromCart(idx) {
+                    this.state.cart.splice(idx, 1);
+                    if (this.state.selectedItemIndex === idx) {
+                        this.state.selectedItemIndex = -1;
+                    } else if (this.state.selectedItemIndex > idx) {
+                        this.state.selectedItemIndex--;
+                    }
+                    this.renderCart();
+                    this.calculateTotals();
+                },
+
+                clearCart(noConfirm = false) {
+                    if (!noConfirm && !confirm("Clear current cart?")) return;
+                    this.state.cart = [];
+                    this.state.selectedItemIndex = -1;
+                    this.state.manualPaid = false;
+                    this.state.transactionStatus = 'cash';
+                    this.renderCart();
+                    this.calculateTotals();
+                },
+
+                setupListeners() {
+                    const counterSelect = document.getElementById('counter');
+                    if (counterSelect) {
+                        counterSelect.addEventListener('change', (e) => {
+                            const sel = e.target.options[e.target.selectedIndex];
+                            if (sel && sel.value) {
+                                this.state.cashierName = sel.text.split(' (')[0];
+                            } else {
+                                this.state.cashierName = '-';
+                            }
+                        });
+                    }
+
+                    document.getElementById('search-input').addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter' && e.target.value.trim()) {
+                            this.handleSearch(e.target.value.trim());
+                            e.target.value = '';
+                        }
+                    });
+
+                    // Global Key handling for Hybrid support (Computer Keyboard + Tablet)
+                    document.addEventListener('keydown', (e) => {
+                        const active = document.activeElement;
+                        const isInput = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA';
+
+                        // 1. Enter key navigation
+                        if (e.key === 'Enter') {
+                            if (active && active.id === 'search-input') return;
+                            e.preventDefault();
+                            this.nextFocus();
+                            return;
+                        }
+
+                        // 2. Physical Keyboard Support for "inputmode=none" fields
+                        if (isInput && active.readOnly === false && active.id !== 'search-input' && active.id !== 'remark' && !active.id.includes('voucher')) {
+                            // If it's a number digit or decimal
+                            if (/^[0-9]$/.test(e.key) || e.key === '.') {
+                                e.preventDefault();
+                                this.handleInput('num', e.key);
+                            }
+                            // Backspace support
+                            else if (e.key === 'Backspace') {
+                                e.preventDefault();
+                                this.handleInput('backspace', '');
+                            }
+                        }
+                    });
+
+                    document.getElementById('search-input').focus();
+                },
+
+                handleSearchInput(query) {
+                    const warehouseId = document.getElementById('warehouse-id').value;
+                    if (!warehouseId) {
+                        alert("Please select a Shop/Warehouse first!");
+                        document.getElementById('search-input').value = '';
+                        return;
+                    }
+
+                    const container = document.getElementById('search-results');
+                    if (!query || query.length < 1) {
+                        container.style.display = 'none';
+                        return;
+                    }
+
+                    const q = query.toLowerCase();
+                    const results = this.state.allProducts.filter(p =>
+                        (p.code && p.code.toLowerCase().includes(q)) ||
+                        (p.item_code && p.item_code.toLowerCase().includes(q)) ||
+                        (p.barcodes && p.barcodes.some(b => b.toLowerCase().includes(q))) ||
+                        (p.name && p.name.toLowerCase().includes(q))
+                    ).slice(0, 10);
+
+                    if (results.length > 0) {
+                        this.renderSearchResults(results);
+                        container.style.display = 'block';
+                    } else {
+                        container.style.display = 'none';
+                    }
+                },
+
+                renderSearchResults(results) {
+                    const container = document.getElementById('search-results');
+                    container.innerHTML = results.map(p => `
+                        <div class="search-result-item" onclick="app.addFromResult('${p.id}')">
+                            <div class="product-info">
+                                <span class="product-name">${p.name}</span>
+                                <span class="product-meta">Code: ${p.item_code || '—'} | Wh Stock: <span class="${p.stock > 0 ? 'text-emerald-400' : 'text-red-400'}">${p.stock}</span></span>
+                            </div>
+                            <span class="product-price">${Math.round(p.price)}</span>
+                        </div>
+                    `).join('');
+                },
+
+                addFromResult(productId) {
+                    const product = this.state.allProducts.find(p => p.id === productId);
+                    if (product) {
+                        this.addToCart(product, true);
+                        document.getElementById('search-input').value = '';
+                        document.getElementById('search-results').style.display = 'none';
+                    }
+                },
+
+                handleSearch(query) {
+                    const q = query.toLowerCase();
+                    const product = this.state.allProducts.find(p =>
+                        (p.code && p.code.toLowerCase() === q) ||
+                        (p.item_code && p.item_code.toLowerCase() === q) ||
+                        (p.barcodes && p.barcodes.includes(query)) ||
+                        (p.name && p.name.toLowerCase().includes(q))
+                    );
+                    if (product) {
+                        this.addToCart(product, true);
+                        document.getElementById('search-results').style.display = 'none';
+                    }
+                },
+
+                addToCart(product, keepSearchFocus = false) {
+                    const existingIdx = this.state.cart.findIndex(i => i.id === product.id);
+                    if (existingIdx > -1) {
+                        this.state.cart[existingIdx].qty += 1;
+                        this.state.selectedItemIndex = existingIdx;
+                    } else {
+                        this.state.cart.push({
+                            id: product.id,
+                            code: product.code || product.item_code || '',
+                            name: product.name,
+                            price: parseFloat(product.price) || 0,
+                            base_price: parseFloat(product.price) || 0,
+                            box_price: parseFloat(product.box_price) || 0,
+                            disc: parseFloat(product.discount) || 0,
+                            qty: 1,
+                            pcs_per_box: product.pcs_per_box || 1,
+                            unit_id: product.unit_id,
+                            base_unit: product.unit || 'pc',
+                            selectedUnit: 'base'
+                        });
+                        this.state.selectedItemIndex = this.state.cart.length - 1;
+                    }
+
+                    if (keepSearchFocus) {
+                        this.state.inputMode = null; // Prevent grid focus theft
+                        this.renderCart();
+                        this.calculateTotals();
+                        document.getElementById('search-input').focus();
+                    } else {
+                        this.state.inputMode = 'qty';
+                        this.state.currentInput = "0";
+                        this.state.resetNextInput = true;
+                        this.renderCart();
+                        this.calculateTotals();
+                    }
+                },
+
+                // --- HOLD / DRAFT LOGIC ---
+                actionHold() {
+                    if (this.state.cart.length === 0) return alert("Cart is empty");
+                    const voucher = document.getElementById('voucher').value;
+                    const custSelect = document.getElementById('customer-id');
+                    const customerName = custSelect.options[custSelect.selectedIndex]?.text || "Walk-in";
+                    const total = document.getElementById('display-grand-total').value;
+
+                    const draft = {
+                        id: Date.now(),
+                        voucher: voucher,
+                        customer: customerName,
+                        total: total,
+                        cart: JSON.parse(JSON.stringify(this.state.cart)),
+                        metadata: {
+                            warehouseId: document.getElementById('warehouse-id').value,
+                            customerId: custSelect.value,
+                            counter: document.getElementById('counter').value,
+                            table: document.getElementById('table').value,
+                            tax: document.getElementById('tax-input').value,
+                            disc: document.getElementById('discount-input').value,
+                            discType: document.getElementById('discount-type').value,
+                            ship: document.getElementById('shipping-input').value,
+                            remark: document.getElementById('remark').value
+                        }
+                    };
+
+                    const drafts = JSON.parse(localStorage.getItem('pos_drafts') || '[]');
+                    drafts.push(draft);
+                    localStorage.setItem('pos_drafts', JSON.stringify(drafts));
+
+                    // Automatically clear cart after hold
+                    this.resetPOS();
+                    console.log("Draft saved and cart cleared.");
+                },
+
+                actionHoldList() {
+                    const drafts = JSON.parse(localStorage.getItem('pos_drafts') || '[]');
+                    let modal = document.getElementById('hold-list-modal');
+                    if (!modal) {
+                        modal = document.createElement('div');
+                        modal.id = 'hold-list-modal';
+                        modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4';
+                        document.body.appendChild(modal);
+                    }
+
+                    modal.innerHTML = `
+                        <div class="glass-panel p-6 w-full max-w-2xl flex flex-col h-[500px] border border-white/10 shadow-2xl">
+                        <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                            <h3 class="text-xl font-black text-white tracking-tight">HOLD LIST</h3>
+                            <button onclick="document.getElementById('hold-list-modal').remove()" class="text-slate-400 hover:text-white transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto no-scrollbar">
+                            <table class="w-full text-left">
+                                <thead class="text-[10px] font-black uppercase text-slate-500 tracking-widest sticky top-0 bg-[#0a0f1d]/90 py-2">
+                                    <tr>
+                                        <th class="py-2 px-3">Voucher #</th>
+                                        <th class="py-2 px-3">Customer</th>
+                                        <th class="py-2 px-3 text-right">Total</th>
+                                        <th class="py-2 px-3 text-right">Items</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5">
+                                    ${drafts.length === 0 ? '<tr><td colspan="4" class="text-center py-10 text-slate-500 font-bold">No items on hold</td></tr>' : drafts.map(d => `
+                                        <tr class="hover:bg-indigo-500/10 cursor-pointer transition-colors group select-none active:bg-indigo-500/20" 
+                                            ondblclick="app.loadHoldItem(${d.id})"
+                                            ontouchend="app.handleDoubleTap(event, ${d.id})">
+                                            <td class="py-3 px-3 text-indigo-300 font-mono text-xs font-bold">${d.voucher}</td>
+                                            <td class="py-3 px-3 text-white text-sm font-medium">${d.customer}</td>
+                                            <td class="py-3 px-3 text-right text-emerald-400 font-black">$ ${d.total}</td>
+                                            <td class="py-3 px-3 text-right text-slate-500 text-xs">${d.cart.length} items</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                            <div class="text-[10px] text-slate-500 italic">
+                                Double-click or Double-tap to load draft.
+                            </div>
+                            <button onclick="localStorage.removeItem('pos_drafts'); app.actionHoldList();" class="text-[9px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors">
+                                Clear All Drafts
+                            </button>
+                        </div>
+                    </div >
+                `;
+                },
+
+                handleDoubleTap(e, id) {
+                    const now = Date.now();
+                    const DOUBLE_TAP_DELAY = 300;
+                    if (now - this.state.lastTap < DOUBLE_TAP_DELAY) {
+                        e.preventDefault();
+                        this.loadHoldItem(id);
+                    }
+                    this.state.lastTap = now;
+                },
+
+                loadHoldItem(id) {
+                    const drafts = JSON.parse(localStorage.getItem('pos_drafts') || '[]');
+                    const draftIdx = drafts.findIndex(d => d.id === id);
+                    if (draftIdx === -1) return;
+                    const draft = drafts[draftIdx];
+
+                    // Load Metadata
+                    document.getElementById('voucher').value = draft.voucher;
+                    document.getElementById('warehouse-id').value = draft.metadata.warehouseId;
+                    document.getElementById('customer-id').value = draft.metadata.customerId;
+                    document.getElementById('counter').value = draft.metadata.counter;
+                    document.getElementById('table').value = draft.metadata.table;
+                    document.getElementById('tax-input').value = draft.metadata.tax;
+                    document.getElementById('discount-input').value = draft.metadata.disc;
+                    document.getElementById('discount-type').value = draft.metadata.discType;
+                    document.getElementById('shipping-input').value = draft.metadata.ship;
+                    document.getElementById('remark').value = draft.metadata.remark;
+
+                    // Load Cart
+                    this.state.cart = draft.cart;
+                    this.state.selectedItemIndex = -1;
+                    this.renderCart();
+                    this.calculateTotals();
+
+                    // Remove from drafts and update UI
+                    drafts.splice(draftIdx, 1);
+                    localStorage.setItem('pos_drafts', JSON.stringify(drafts));
+
+                    const modal = document.getElementById('hold-list-modal');
+                    if (modal) modal.remove();
+                    document.getElementById('search-input').focus();
+                },
+
+                async finalizeSale(shouldPrint) {
+                    if (this.state.cart.length === 0) return;
+
+                    const subtotal = this.state.cart.reduce((sum, item) => {
+                        const effectiveQty = (item.selectedUnit === 'box') ? (item.qty * (item.pcs_per_box || 1)) : item.qty;
+                        return sum + (effectiveQty * item.price);
+                    }, 0);
+                    const itemDiscounts = this.state.cart.reduce((sum, item) => sum + (item.disc || 0), 0);
+                    const taxPercent = parseFloat(document.getElementById('tax-input')?.value) || 0;
+                    const discountValue = parseFloat(document.getElementById('discount-input')?.value) || 0;
+                    const discountType = document.getElementById('discount-type')?.value;
+                    const shipping = parseFloat(document.getElementById('shipping-input')?.value) || 0;
+
+                    const globalDiscount = discountType === 'percent' ? ((subtotal - itemDiscounts) * discountValue / 100) : discountValue;
+                    const totalDiscount = itemDiscounts + globalDiscount;
+                    const total = (subtotal - totalDiscount) + ((subtotal - totalDiscount) * taxPercent / 100) + shipping;
+                    const paid = parseFloat(document.getElementById('display-paid').value) || 0;
+
+                    try {
+                        // Calculate payment status for filtering
+                        let paymentStatus = 'UNPAID';
+                        if (paid >= (total - 0.5)) { // Small margin for rounding
+                            paymentStatus = 'PAID';
+                        } else if (paid > 0) {
+                            paymentStatus = 'PARTIAL';
+                        }
+
+                        const custSelect = document.getElementById('customer-id');
+                        const customerName = custSelect.options[custSelect.selectedIndex]?.text || "Walk-in";
+
+                        const transactionData = {
+                            id: this.state.editingSaleId || undefined, // Include ID if editing
+                            voucher_no: document.getElementById('voucher').value,
+                            warehouse_id: document.getElementById('warehouse-id').value || null,
+                            customer_id: document.getElementById('customer-id').value || null,
+                            customer_name: customerName,
+                            counter: document.getElementById('counter').value || null,
+                            user_id: document.getElementById('counter').value || null,
+                            subtotal: subtotal,
+                            total_amount: total,
+                            total: total,
+                            paid_amount: paid,
+                            tax_percent: taxPercent,
+                            tax_amount: (subtotal - totalDiscount) * taxPercent / 100,
+                            discount_value: discountValue,
+                            discount_type: discountType,
+                            discount_amount: totalDiscount,
+                            shipping_amount: shipping,
+                            payment_method: this.state.paymentMethod,
+                            transaction_status: this.state.transactionStatus,
+                            payment_status: paymentStatus,
+                            payment_details: this.state.paymentMethod === 'Multi' ? this.state.paymentSplits : null,
+                            items: this.state.cart,
+                            cashier: this.state.cashierName
+                        };
+
+                        const { data: rpcResult, error: rpcError } = await supabase.rpc('process_pos_sale', {
+                            tx_data: transactionData,
+                            payments_data: paid > 0 ? (this.state.paymentMethod === 'Multi' ? Object.entries(this.state.paymentSplits)
+                                .filter(([method, amount]) => amount > 0)
+                                .map(([method, amount]) => ({
+                                    amount: amount,
+                                    payment_method: method === 'secondary' ? this.state.secondaryMethod : method,
+                                    payment_date: new Date().toISOString().split('T')[0],
+                                    note: 'POS Multi Payment'
+                                })) : [{
+                                    amount: paid,
+                                    payment_method: this.state.paymentMethod,
+                                    payment_date: new Date().toISOString().split('T')[0],
+                                    note: 'POS Single Payment'
+                                }]) : [],
+                            items_data: this.state.cart.map(item => ({
+                                product_id: item.id,
+                                product_name: item.name,
+                                quantity: (item.selectedUnit === 'box') ? (item.qty * (item.pcs_per_box || 1)) : item.qty,
+                                price: item.price,
+                                subtotal: (((item.selectedUnit === 'box') ? item.qty * (item.pcs_per_box || 1) : item.qty) * item.price) - (item.disc || 0),
+                                discount: item.disc || 0
+                            }))
+                        });
+
+                        if (rpcError) throw rpcError;
+
+                        this.state.editingSaleId = null; // Clear edit state after success
+                        this.resetPOS();
+                        if (shouldPrint) {
+                            const custSelect = document.getElementById('customer-id');
+                            const customerName = custSelect.options[custSelect.selectedIndex]?.text || "Walk-in";
+
+                            // Call the modular printer chunk
+                            ReceiptPrinter.print({
+                                ...transactionData,
+                                customer_name: customerName
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Sale Error:", e);
+                        alert("Failed to save transaction: " + (e.message || e));
+                    }
+                },
+
+                resetPOS() {
+                    this.state.cart = [];
+                    this.state.editingSaleId = null;
+                    this.state.manualPaid = false;
+                    this.generateVoucherNo();
+                    this.renderCart();
+                    this.calculateTotals();
+                    document.getElementById('search-input').focus();
+                },
+
+                clearCart() {
+                    if (confirm("Are you sure you want to clear the entire cart?")) {
+                        this.resetPOS();
+                    }
+                },
+
+                actionSales() {
+                    const counterId = document.getElementById('counter').value;
+                    const container = document.getElementById('internal-sales-view');
+                    const iframe = document.getElementById('salePosInternalIframe');
+                    container.classList.remove('hidden');
+
+                    // If iframe is already loaded, send message. Otherwise set src.
+                    try {
+                        if (iframe.contentWindow) {
+                            iframe.contentWindow.postMessage({ type: 'REFRESH_SALES', counterId: counterId }, '*');
+                        }
+                    } catch (e) {
+                        console.log("PostMessage failed, falling back to src change");
+                    }
+
+                    if (!iframe.src || iframe.src === '' || iframe.src.indexOf('sale-pos.html') === -1) {
+                        iframe.src = `sale-pos.html?counter=${counterId}&t=${Date.now()}`;
+                    }
+                },
+
+                closeInternalSales() {
+                    document.getElementById('internal-sales-view').classList.add('hidden');
+                },
+
+                async editSale(saleId) {
+                    try {
+                        // 1. Fetch Sale Data
+                        const { data: sale, error: saleError } = await supabase
+                            .from('transactions')
+                            .select('*')
+                            .eq('id', saleId)
+                            .single();
+
+                        if (saleError) throw saleError;
+
+                        // 2. Fetch Sale Items
+                        const { data: items, error: itemsError } = await supabase
+                            .from('transaction_items')
+                            .select('*')
+                            .eq('transaction_id', saleId);
+
+                        if (itemsError) throw itemsError;
+
+                        // 3. Clear Current Cart (no confirmation)
+                        this.clearCart(true);
+
+                        // 4. Set Metadata
+                        this.state.editingSaleId = saleId;
+                        document.getElementById('voucher').value = sale.voucher_no;
+                        document.getElementById('warehouse-id').value = sale.warehouse_id || '';
+                        document.getElementById('customer-id').value = sale.customer_id || '';
+                        document.getElementById('counter').value = sale.counter || '';
+                        document.getElementById('tax-input').value = sale.tax_percent || 0;
+                        document.getElementById('discount-input').value = sale.discount_value || 0;
+                        document.getElementById('discount-type').value = sale.discount_type || 'fixed';
+                        document.getElementById('shipping-input').value = sale.shipping_amount || 0;
+                        document.getElementById('remark').value = sale.remark || '';
+
+                        // 5. Load Items into Cart
+                        this.state.cart = items.map(item => ({
+                            id: item.product_id,
+                            name: item.product_name,
+                            qty: item.quantity,
+                            price: item.price,
+                            base_price: item.price, // fallback
+                            disc: item.discount || 0,
+                            selectedUnit: 'base', // Default to base on edit for simplicity
+                            pcs_per_box: 1, // Will be updated if product is found in state.allProducts
+                            unit_id: null,
+                            base_unit: 'pc'
+                        }));
+
+                        // Try to enrich item data from allProducts if available
+                        if (this.state.allProducts.length > 0) {
+                            this.state.cart = this.state.cart.map(cartItem => {
+                                const p = this.state.allProducts.find(prod => prod.id === cartItem.id);
+                                if (p) {
+                                    return {
+                                        ...cartItem,
+                                        pcs_per_box: p.pcs_per_box || 1,
+                                        unit_id: p.unit_id,
+                                        base_unit: p.unit || 'pc',
+                                        base_price: p.price,
+                                        box_price: p.box_price // Correctly load box_price during edit
+                                    };
+                                }
+                                return cartItem;
+                            });
+                        }
+
+                        // 6. Finalize UI
+                        this.state.paymentMethod = sale.payment_method || 'Cash';
+                        this.state.transactionStatus = sale.transaction_status || 'cash';
+                        document.getElementById('display-paid').value = sale.paid_amount || 0;
+                        
+                        this.renderCart();
+                        this.calculateTotals();
+                        this.buildPaymentMethods();
+                        this.closeInternalSales();
+                        
+                        console.log("Sale loaded for editing:", saleId);
+                    } catch (e) {
+                        console.error("Edit Sale Error:", e);
+                        alert("Failed to load sale: " + e.message);
+                    }
+                },
+
+                async printSale(saleId) {
+                    try {
+                        console.log("Fetching sale for printing:", saleId);
+                        const { data: sale, error } = await supabase
+                            .from('transactions')
+                            .select('*, customers(name)')
+                            .eq('id', saleId)
+                            .single();
+                        
+                        if (error) throw error;
+                        
+                        // Items are usually required for printing
+                        const { data: items, error: itemsError } = await supabase
+                            .from('transaction_items')
+                            .select('*')
+                            .eq('transaction_id', saleId);
+                        
+                        if (itemsError) throw itemsError;
+
+                        const customerName = sale.customers?.name || sale.customer_name || "Walk-in";
+
+                        ReceiptPrinter.print({
+                            ...sale,
+                            customer_name: customerName,
+                            items: items
+                        });
+                    } catch (e) {
+                        console.error("Print Sale Error:", e);
+                        alert("Failed to print: " + e.message);
+                    }
+                }
+            };
+
+            window.app = app;
+
+            // Handle messages from internal iframes (like sale-pos.html)
+            window.addEventListener('message', (event) => {
+                if (event.data === 'CLOSE_INTERNAL_SALES') {
+                    app.closeInternalSales();
+                } else if (event.data && event.data.type === 'EDIT_SALE') {
+                    app.editSale(event.data.id);
+                } else if (event.data && event.data.type === 'PRINT_VOUCHER') {
+                    app.printSale(event.data.id);
+                }
+            });
+
+            window.onload = () => app.init();
+        </script>
+        <!-- Internal Sales View Overlay -->
+        <div id="internal-sales-view" class="hidden">
+            <iframe id="salePosInternalIframe" src="sale-pos.html"
+                style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+</body>
+
+</html>

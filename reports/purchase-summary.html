@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Summary Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css.all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../css/reports-common.css">
+    <style>
+        .tshell table { min-width: 1400px; }
+        .tshell th, .tshell td { padding: 10px 12px; }
+        
+        /* Column widths */
+        th:nth-child(1) { width: 50px; }  /* # */
+        th:nth-child(2) { width: 100px; } /* Date */
+        th:nth-child(3) { width: 110px; } /* Voucher No */
+        th:nth-child(4) { width: 120px; } /* Supplier */
+        th:nth-child(5) { width: 100px; } /* Shop */
+        th:nth-child(6) { width: 110px; } /* Total Amount */
+        th:nth-child(7) { width: 100px; } /* Net Amount */
+        th:nth-child(8) { width: 90px; }  /* Discount */
+        th:nth-child(9) { width: 100px; } /* Paid */
+        th:nth-child(10) { width: 90px; } /* Remain */
+        th:nth-child(11) { width: 100px; } /* Payment Status */
+        th:nth-child(12) { width: 90px; } /* Payment Type */
+        th:nth-child(13) { width: 100px; } /* Remark */
+    </style>
+</head>
+
+<body>
+    <div class="dp">
+        <div class="crumb">
+            <span class="cs"><i class="fas fa-truck" style="color:var(--green)"></i> Purchase Report</span>
+            <span class="ca">›</span>
+            <span class="cc">Purchase Summary Report</span>
+        </div>
+
+        <div class="dstats">
+            <div class="ds">
+                <div class="ds-l">Total Purchases</div>
+                <div class="ds-v" id="h-ps-total" style="color:var(--green)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Discount</div>
+                <div class="ds-v" id="h-ps-discount" style="color:var(--red)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Paid</div>
+                <div class="ds-v" id="h-ps-paid" style="color:var(--blue)">0 Ks</div>
+            </div>
+            <div class="ds">
+                <div class="ds-l">Total Remain</div>
+                <div class="ds-v" id="h-ps-remain" style="color:var(--orange)">0 Ks</div>
+            </div>
+        </div>
+
+        <div class="tshell">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="row-num">#</th>
+                        <th>Date</th>
+                        <th>Voucher No</th>
+                        <th>Supplier</th>
+                        <th>Shop</th>
+                        <th>Total Amount</th>
+                        <th>Net Amount</th>
+                        <th>Discount</th>
+                        <th>Paid Amount</th>
+                        <th>Remain</th>
+                        <th>Payment Status</th>
+                        <th>Payment Type</th>
+                        <th>Remark</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-purchase-summary"></tbody>
+            </table>
+        </div>
+        <div class="pager" id="pg-purchase-summary"></div>
+    </div>
+
+    <script src="../js/reports-common.js"></script>
+    <script>
+        const TYPE = 'purchase-summary';
+
+        function renderV() {
+            const body = document.getElementById('tb-' + TYPE);
+            if (!body) return;
+
+            // Handle stats
+            const total = DATA.reduce((a, b) => a + (b.total || 0), 0);
+            const discount = DATA.reduce((a, b) => a + (b.discount || 0), 0);
+            const paid = DATA.reduce((a, b) => a + (b.paid || 0), 0);
+            const remain = DATA.reduce((a, b) => a + (b.remain || 0), 0);
+
+            document.getElementById('h-ps-total').innerText = fmt(total) + ' Ks';
+            document.getElementById('h-ps-discount').innerText = fmt(discount) + ' Ks';
+            document.getElementById('h-ps-paid').innerText = fmt(paid) + ' Ks';
+            document.getElementById('h-ps-remain').innerText = fmt(remain) + ' Ks';
+
+            if (DATA.length === 0) {
+                body.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:38px;color:var(--t4)"><i class="fas fa-inbox" style="font-size:22px;display:block;margin-bottom:6px;opacity:.25"></i>No records found</td></tr>';
+            } else {
+                const sl = DATA.slice(pg * PS, (pg + 1) * PS);
+                const startNum = pg * PS + 1;
+                body.innerHTML = sl.map((r, idx) => {
+                    const statusClass = r.pay === 'Paid' ? 'bg' : r.pay === 'Partial' ? 'bo' : 'br';
+                    return `
+                    <tr>
+                        <td class="row-num">${startNum + idx}</td>
+                        <td><div class="cell-container">${r.date || '-'}</div></td>
+                        <td><div class="cell-container"><b>${r.ref || '-'}</b></div></td>
+                        <td><div class="cell-container">${r.sup || 'Unknown'}</div></td>
+                        <td><div class="cell-container">${r.shop || '-'}</div></td>
+                        <td><div class="cell-container ta">${fmt(r.total)}</div></td>
+                        <td><div class="cell-container ta" style="color:var(--green)"><b>${fmt(r.net)}</b></div></td>
+                        <td><div class="cell-container ta" style="color:var(--red)">-${fmt(r.discount)}</div></td>
+                        <td><div class="cell-container ta" style="color:var(--blue)">${fmt(r.paid)}</div></td>
+                        <td><div class="cell-container ta" style="color:var(--orange)">${fmt(r.remain)}</div></td>
+                        <td><div class="cell-container"><span class="badge ${statusClass}">${r.pay || '-'}</span></div></td>
+                        <td><div class="cell-container">${r.method || 'Cash'}</div></td>
+                        <td><div class="cell-container">${r.remark || '-'}</div></td>
+                    </tr>
+                `}).join('');
+            }
+            renderPager(TYPE, DATA.length);
+        }
+
+        async function refresh() {
+            await fetchData(TYPE);
+            renderV();
+        }
+
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            srch = params.get('q') || '';
+            dF = params.get('df') || '';
+            dT = params.get('dt') || '';
+            refresh();
+        });
+    </script>
+</body>
+
+</html>
