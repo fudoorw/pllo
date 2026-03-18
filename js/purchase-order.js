@@ -487,8 +487,8 @@ function showProductSearchDropdown(index, query, field = 'description') {
     productSearchItems = productsArray
         .filter(p => {
             if (!p) return false;
-            if (field === 'itemCode') return p.code && p.code.toLowerCase().startsWith(q);
-            if (field === 'barcode') return p.barcodes && p.barcodes.some(b => b.toLowerCase().startsWith(q));
+            if (field === 'itemCode') return p.code && p.code.toLowerCase() === q;
+            if (field === 'barcode') return p.barcodes && p.barcodes.some(b => b.toLowerCase() === q);
             return p.name && p.name.toLowerCase().includes(q);
         })
         .slice(0, 15);
