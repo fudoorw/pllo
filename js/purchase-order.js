@@ -637,6 +637,26 @@ function handleGridKey(idx, e) {
             moveFocus(idx, currentCol, 'right');
             return;
         }
+        if (currentCol === 'itemCode' || currentCol === 'barcode') {
+            const val = e.target.value.trim();
+            if (val) {
+                const q = val.toLowerCase();
+                const exactMatch = productsArray.find(p => {
+                    if (currentCol === 'itemCode') {
+                        return p.code && p.code.toLowerCase() === q;
+                    } else if (currentCol === 'barcode') {
+                        return p.barcodes && p.barcodes.some(b => b.toLowerCase() === q);
+                    }
+                    return false;
+                });
+                if (!exactMatch) {
+                    e.preventDefault();
+                    alert(`Invalid ${currentCol === 'itemCode' ? 'item code' : 'barcode'}. Exact match required.`);
+                    e.target.select();
+                    return;
+                }
+            }
+        }
         const selStart = e.target.selectionStart;
         const val = e.target.value;
         if (selStart === val.length) {
@@ -661,6 +681,26 @@ function handleGridKey(idx, e) {
         e.preventDefault();
         moveFocus(idx, currentCol, 'up');
     } else if (e.key === 'Enter') {
+        if (currentCol === 'itemCode' || currentCol === 'barcode') {
+            const val = e.target.value.trim();
+            if (val) {
+                const q = val.toLowerCase();
+                const exactMatch = productsArray.find(p => {
+                    if (currentCol === 'itemCode') {
+                        return p.code && p.code.toLowerCase() === q;
+                    } else if (currentCol === 'barcode') {
+                        return p.barcodes && p.barcodes.some(b => b.toLowerCase() === q);
+                    }
+                    return false;
+                });
+                if (!exactMatch) {
+                    e.preventDefault();
+                    alert(`Invalid ${currentCol === 'itemCode' ? 'item code' : 'barcode'}. Exact match required.`);
+                    e.target.select();
+                    return;
+                }
+            }
+        }
         if (items[idx].isPreview && items[idx].tempProductId) {
             e.preventDefault();
             confirmSelection(idx);
