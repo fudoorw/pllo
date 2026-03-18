@@ -11,16 +11,24 @@
         :root {
             --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-hover: rgba(255, 255, 255, 0.15);
             --glass-blur: 16px;
             --accent-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+            --input-bg: rgba(15, 23, 42, 0.5);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --card-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.4);
+            --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
-            background: #121212;
+            background: #0a0a0f;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.1) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
             min-height: 100vh;
+            color: #e2e8f0;
         }
 
         body.embedded {
@@ -28,87 +36,124 @@
             background-image: none;
         }
 
+        body.embedded .glass-card {
+            background: rgba(15, 15, 25, 0.8);
+        }
+
         .settings-container {
-            max-width: 1100px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: var(--space-xl);
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 48px 24px;
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         /* Premium Tabs */
         .tabs-header {
             display: inline-flex;
-            background: var(--glass-bg);
+            background: linear-gradient(135deg, rgba(30, 32, 45, 0.8), rgba(20, 20, 30, 0.9));
             backdrop-filter: blur(var(--glass-blur));
             border: 1px solid var(--glass-border);
-            padding: 4px;
-            border-radius: 14px;
+            padding: 6px;
+            border-radius: 16px;
             gap: 4px;
-            margin-bottom: var(--space-2xl);
-            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+            margin-bottom: 40px;
+            box-shadow: 0 8px 32px -2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
         }
 
         .tab-button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             background: transparent;
             border: none;
-            color: var(--text-muted);
-            font-size: 0.9rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            transition: all var(--transition-smooth);
             display: flex;
             align-items: center;
             gap: 8px;
+            position: relative;
+            overflow: hidden;
         }
 
         .tab-button i {
-            font-size: 0.85rem;
-            opacity: 0.7;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            transition: all var(--transition-fast);
         }
 
         .tab-button:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .tab-button:hover i {
+            opacity: 1;
+            transform: scale(1.1);
         }
 
         .tab-button.active {
             color: white;
-            background: var(--primary);
-            box-shadow: var(--shadow-glow);
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255,255,255,0.15);
         }
 
         /* Glass Cards */
         .glass-card {
-            background: var(--glass-bg);
+            background: linear-gradient(135deg, rgba(30, 32, 45, 0.6), rgba(20, 20, 30, 0.4));
             backdrop-filter: blur(var(--glass-blur));
             border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: var(--space-xl);
-            box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.3);
-            margin-bottom: var(--space-xl);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
         }
 
         .section-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: var(--space-xl);
-            padding-bottom: var(--space-md);
+            gap: 14px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
             border-bottom: 1px solid var(--glass-border);
+        }
+
+        .section-header i {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
+            border-radius: 12px;
+            color: #a5b4fc;
+            font-size: 1rem;
         }
 
         .section-header h2 {
             margin: 0;
-            font-size: 1.25rem;
+            font-size: 1.35rem;
+            font-weight: 600;
             letter-spacing: -0.02em;
-            background: linear-gradient(to right, #fff, #94a3b8);
+            background: linear-gradient(to right, #f8fafc, #cbd5e1);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -117,40 +162,74 @@
         .settings-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: var(--space-xl);
+            gap: 24px;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
         }
 
         .field-label {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            font-weight: 700;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
+            padding-left: 2px;
         }
 
         .excel-input,
         .excel-select {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid var(--glass-border);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 12px;
-            padding: 12px 16px;
-            color: white;
+            padding: 14px 18px;
+            color: #f1f5f9;
             font-size: 0.95rem;
-            transition: all 0.2s ease;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .excel-input::placeholder {
+            color: #475569;
+            font-weight: 400;
+        }
+
+        .excel-input:hover,
+        .excel-select:hover {
+            border-color: var(--glass-border-hover);
+            background: rgba(15, 23, 42, 0.6);
         }
 
         .excel-input:focus,
         .excel-select:focus {
             outline: none;
-            border-color: var(--primary);
-            background: rgba(15, 23, 42, 0.6);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            border-color: #6366f1;
+            background: rgba(15, 23, 42, 0.7);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15), 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .excel-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 48px;
+        }
+
+        .excel-select option {
+            background: #1e293b;
+            color: #f1f5f9;
         }
 
         /* Premium Toggle */
@@ -158,71 +237,155 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
+            padding: 16px 20px;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            transition: all 0.2s ease;
+            border-radius: 14px;
+            transition: all var(--transition-fast);
+            cursor: pointer;
         }
 
         .toggle-group:hover {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--glass-border-hover);
+            transform: translateX(4px);
+        }
+
+        .toggle-label {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-label i {
+            color: #64748b;
+            font-size: 0.9rem;
+            width: 20px;
+            text-align: center;
         }
 
         .toggle-switch {
-            width: 44px;
-            height: 24px;
+            position: relative;
+            width: 52px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
         }
 
         .toggle-slider {
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #334155, #1e293b);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            transition: all var(--transition-smooth);
         }
 
         .toggle-slider:before {
-            height: 18px;
-            width: 18px;
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
             left: 2px;
             bottom: 2px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            border-radius: 50%;
+            transition: all var(--transition-smooth);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
         }
 
-        input:checked+.toggle-slider {
-            background: var(--primary);
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+            background: white;
+            box-shadow: 0 2px 12px rgba(99, 102, 241, 0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .toggle-switch input:focus + .toggle-slider {
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
         }
 
         /* Receipt Grid */
         .receipt-toggles {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: var(--space-md);
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         /* Submit Button */
         .btn-primary {
-            margin-top: var(--space-xl);
+            margin-top: 32px;
             width: 100%;
-            padding: 14px;
-            background: var(--primary);
-            border-radius: 12px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 0.95rem;
             font-weight: 700;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
-            box-shadow: var(--shadow-glow);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.5s;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             filter: brightness(1.1);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 12px 32px rgba(99, 102, 241, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+
+        /* Logo Upload */
+        .logo-upload {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .logo-preview-container {
             width: 100px;
             height: 100px;
-            border-radius: 20px;
+            border-radius: 16px;
             border: 2px dashed var(--glass-border);
             padding: 8px;
             display: flex;
@@ -230,6 +393,13 @@
             justify-content: center;
             background: rgba(255, 255, 255, 0.02);
             overflow: hidden;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .logo-preview-container:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
         }
 
         .logo-preview {
@@ -239,10 +409,91 @@
             border-radius: 12px;
         }
 
+        #logoPlaceholder {
+            color: #475569;
+            font-size: 1.75rem;
+        }
+
+        .logo-input-wrapper {
+            flex: 1;
+        }
+
+        /* Tab Content Animation */
+        .tab-content {
+            display: none;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
         @media (max-width: 768px) {
+            .settings-container {
+                padding: 24px 16px;
+            }
+
+            .tabs-header {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .tabs-header::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab-button {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+
             .settings-grid, .receipt-toggles {
                 grid-template-columns: 1fr;
             }
+
+            .form-group.full-width {
+                grid-column: span 1;
+            }
+
+            .glass-card {
+                padding: 24px;
+                border-radius: 16px;
+            }
+
+            .toggle-group {
+                padding: 14px 16px;
+            }
+
+            .logo-upload {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        /* Input icon wrapper */
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            pointer-events: none;
+        }
+
+        .excel-input.has-icon {
+            padding-right: 48px;
         }
     </style>
 </head>
@@ -285,12 +536,15 @@
                         <input type="email" id="defaultEmail" class="excel-input" placeholder="email@example.com">
                     </div>
                     <div class="form-group full-width">
-                        <div class="toggle-group">
+                        <div class="toggle-group" onclick="document.getElementById('currencyIconRight').click()">
+                            <span class="toggle-label">
+                                <i class="fas fa-coins"></i>
+                                Currency Icon Right Side
+                            </span>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="currencyIconRight">
                                 <span class="toggle-slider"></span>
                             </label>
-                            <label class="field-label" style="margin: 0;">Currency Icon Right Side</label>
                         </div>
                     </div>
                     <div class="form-group">
@@ -298,9 +552,11 @@
                         <div class="logo-upload">
                             <div class="logo-preview-container">
                                 <img id="logoPreview" src="" alt="Logo" class="logo-preview" style="display: none;">
-                                <i id="logoPlaceholder" class="fas fa-image text-slate-600 text-2xl"></i>
+                                <i id="logoPlaceholder" class="fas fa-image"></i>
                             </div>
-                            <input type="file" id="logoUpload" accept="image/*" class="excel-input">
+                            <div class="logo-input-wrapper">
+                                <input type="file" id="logoUpload" accept="image/*" class="excel-input" style="padding: 10px 14px;">
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -448,71 +704,98 @@
                 </div>
             <form id="receiptForm">
                 <div class="receipt-toggles">
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showNote').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-sticky-note"></i>
+                            Show note
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showNote" checked>
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show note</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showPhone').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-phone"></i>
+                            Show Phone
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showPhone" checked>
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show Phone</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showCustomer').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-user"></i>
+                            Show Customer
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showCustomer" checked>
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show Customer</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showAddress').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Show Address
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showAddress" checked>
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show Address</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showEmail').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-envelope"></i>
+                            Show Email
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showEmail">
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show Email</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showTaxDiscount').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-percent"></i>
+                            Show Tax & Discount & Shipping
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showTaxDiscount" checked>
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show Tax & Discount & Shipping</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showBarcode').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-barcode"></i>
+                            Show barcode in receipt
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showBarcode" checked>
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show barcode in receipt</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showLogoPayment').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-receipt"></i>
+                            Show logo in payment slip
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showLogoPayment">
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show logo in payment slip</label>
                     </div>
-                    <div class="toggle-group">
+                    <div class="toggle-group" onclick="document.getElementById('showProductCode').click()">
+                        <span class="toggle-label">
+                            <i class="fas fa-qrcode"></i>
+                            Show Product Code
+                        </span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="showProductCode">
                             <span class="toggle-slider"></span>
                         </label>
-                        <label class="field-label" style="margin: 0;">Show Product Code</label>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-top: 8px;">
                     <label class="field-label">Note:*</label>
                     <input type="text" id="receiptNote" class="excel-input" placeholder="Enter receipt note"
                         value="😊 ပယ်ယူအားပေးမှုအတွက် 😊">
