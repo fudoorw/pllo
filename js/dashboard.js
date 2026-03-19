@@ -330,25 +330,19 @@ async function loadCashBookSummary(start, end) {
         const startISO = new Date(start.setHours(0, 0, 0, 0)).toISOString();
         const endISO = new Date(end.setHours(23, 59, 59, 999)).toISOString();
 
-        // Query customer outstanding transactions (unpaid)
         let custQuery = window.supabase.from('transactions')
-            .select('created_at, total_amount, paid_amount, customer_name')
+            .select('created_at, total_amount, paid_amount, customer_name, customer_id')
             .neq('payment_status', 'Paid')
             .gte('created_at', startISO)
-            .lte('created_at', endISO)
-            .order('created_at', { ascending: false });
+            .lte('created_at', endISO);
 
-        if (warehouseId) {
-            custQuery = custQuery.eq('warehouse_id', warehouseId);
-        }
-
-        // Query all unpaid customer transactions before period (for opening balance)
         let custOpeningQuery = window.supabase.from('transactions')
             .select('total_amount, paid_amount')
             .neq('payment_status', 'Paid')
             .lt('created_at', startISO);
 
         if (warehouseId) {
+            custQuery = custQuery.eq('warehouse_id', warehouseId);
             custOpeningQuery = custOpeningQuery.eq('warehouse_id', warehouseId);
         }
 
@@ -360,32 +354,30 @@ async function loadCashBookSummary(start, end) {
             custOpeningQuery.limit(10000)
         ]);
 
-        const rows = [];
-        let openingCustBalance = 0;
-        let periodCustomerTotal = 0;
+        const openingBalance = (allCust || []).reduce((acc, r) => acc + (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0), 0);
 
-        // Calculate opening balance from all unpaid before selected date
-        openingCustBalance = (allCust || []).reduce((acc, r) => {
-            return acc + (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
-        }, 0);
+        const aggregatedRows = [];
 
-        // Customer Outstanding items for the period (as Receipt)
         (custOutstanding || []).forEach(s => {
             const outstanding = (Number(s.total_amount) || 0) - (Number(s.paid_amount) || 0);
             if (outstanding > 0) {
-                periodCustomerTotal += outstanding;
-                rows.push({
-                    date: s.created_at,
-                    particulars: s.customer_name || 'Walk-in',
-                    receipt: outstanding,
-                    payment: 0,
-                    type: 'customer',
-                    ts: new Date(s.created_at).getTime()
-                });
+                const key = `cust_${s.customer_id || 'walkin'}`;
+                const existing = aggregatedRows.find(r => r.key === key);
+                if (existing) {
+                    existing.outstanding += outstanding;
+                } else {
+                    aggregatedRows.push({
+                        key: key,
+                        date: s.created_at,
+                        particulars: s.customer_name || 'Walk-in Customer',
+                        outstanding: outstanding,
+                        type: 'customer'
+                    });
+                }
             }
         });
 
-        rows.sort((a, b) => b.ts - a.ts);
+        aggregatedRows.sort((a, b) => b.outstanding - a.outstanding);
 
         const body = document.getElementById('cash-body');
         if (!body) return;
@@ -393,17 +385,24 @@ async function loadCashBookSummary(start, end) {
 
         const fmt = n => Number(n || 0).toLocaleString();
 
-        // Display opening customer balance
-        const elOpeningCust = document.getElementById('opening-customer-balance');
-        const elOpeningSup = document.getElementById('opening-supplier-balance');
-        if (elOpeningCust) elOpeningCust.textContent = fmt(openingCustBalance) + ' KS';
-        if (elOpeningSup) elOpeningSup.textContent = '0 KS';
+        const openingRow = document.createElement('tr');
+        openingRow.className = 'balance-header opening';
+        openingRow.innerHTML = `
+            <td colspan="2" style="font-weight: 700; background: var(--bg-secondary);">
+                <span style="color: var(--text-secondary);">OPENING BALANCE</span>
+            </td>
+            <td class="val" style="text-align: right; font-weight: 700; background: var(--bg-secondary); color: var(--primary-light);">${fmt(openingBalance)}</td>
+            <td class="val" style="text-align: right; font-weight: 700; background: var(--bg-secondary);"></td>
+            <td class="val" style="text-align: right; font-weight: 700; background: var(--bg-secondary); color: var(--primary-light);">${fmt(openingBalance)}</td>
+        `;
+        body.appendChild(openingRow);
 
-        // Running balance starting from opening customer
-        let runningBalance = openingCustBalance;
+        let totalOutstanding = 0;
+        let runningBalance = openingBalance;
 
-        rows.forEach(r => {
-            runningBalance += r.receipt - r.payment;
+        aggregatedRows.forEach(r => {
+            totalOutstanding += r.outstanding;
+            runningBalance += r.outstanding;
 
             const tr = document.createElement('tr');
             const dateObj = new Date(r.date);
@@ -412,31 +411,43 @@ async function loadCashBookSummary(start, end) {
             tr.innerHTML = `
                 <td style="text-align:center; font-size:0.8rem; color: var(--text-secondary);">${dateLabel}</td>
                 <td style="font-size:0.85rem; color: var(--text-main);">${r.particulars}</td>
-                <td class="val" style="color: var(--primary-light); font-weight: 600;">${r.receipt > 0 ? fmt(r.receipt) : ''}</td>
-                <td class="val" style="color: var(--primary); font-weight: 600;">${r.payment > 0 ? fmt(r.payment) : ''}</td>
+                <td class="val" style="color: var(--primary-light); font-weight: 600;">${fmt(r.outstanding)}</td>
+                <td class="val" style="color: var(--error); font-weight: 600;"></td>
                 <td class="val" style="color: var(--primary-light); font-weight: 700;">${fmt(runningBalance)}</td>
             `;
             body.appendChild(tr);
         });
 
-        // Add empty row message if no outstanding items
-        if (rows.length === 0) {
+        if (aggregatedRows.length === 0) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td colspan="5" style="text-align:center; padding:40px; color: var(--text-secondary); font-size:0.85rem;">
-                    No customer outstanding items found for this period
+                    No outstanding items found for this period
                 </td>
             `;
             body.appendChild(tr);
         }
 
-        // Calculate and display closing customer balance
-        const closingCustBalance = openingCustBalance + periodCustomerTotal;
+        const closingBalance = openingBalance + totalOutstanding;
 
-        const elClosingCust = document.getElementById('closing-customer-balance');
-        const elClosingSup = document.getElementById('closing-supplier-balance');
-        if (elClosingCust) elClosingCust.textContent = fmt(closingCustBalance) + ' KS';
-        if (elClosingSup) elClosingSup.textContent = '0 KS';
+        const closingRow = document.createElement('tr');
+        closingRow.className = 'balance-header closing';
+        closingRow.innerHTML = `
+            <td colspan="2" style="font-weight: 700; background: var(--bg-secondary);">
+                <span style="color: var(--text-secondary);">CLOSING BALANCE</span>
+            </td>
+            <td class="val" style="text-align: right; font-weight: 700; background: var(--bg-secondary); color: var(--primary-light);">${fmt(totalOutstanding)}</td>
+            <td class="val" style="text-align: right; font-weight: 700; background: var(--bg-secondary);"></td>
+            <td class="val" style="text-align: right; font-weight: 700; background: var(--bg-secondary); color: var(--primary-light);">${fmt(closingBalance)}</td>
+        `;
+        body.appendChild(closingRow);
+
+        const elReceiptTotal = document.getElementById('cash-receipt-total');
+        const elPaymentTotal = document.getElementById('cash-payment-total');
+        const elBalanceTotal = document.getElementById('cash-balance-total');
+        if (elReceiptTotal) elReceiptTotal.textContent = fmt(closingBalance);
+        if (elPaymentTotal) elPaymentTotal.textContent = '0';
+        if (elBalanceTotal) elBalanceTotal.textContent = fmt(closingBalance);
 
     } catch (e) {
         console.error('Error loading cash book summary:', e);
