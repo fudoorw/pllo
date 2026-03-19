@@ -97,7 +97,8 @@ async function initDashboard() {
         await Promise.all([
             loadTopRowStats(fromDate, toDate),
             loadCashBookSummary(fromDate, toDate),
-            loadProfitLossSummary(fromDate, toDate)
+            loadProfitLossSummary(fromDate, toDate),
+            loadOutstandingSummary()
         ]);
         updatePeriodLabels(fromDate, toDate);
     } catch (error) {
@@ -320,7 +321,7 @@ async function loadTopRowStats(start, end) {
 }
 
 /**
- * Load Cash Book Summary Panel
+ * Load Cash Book Summary Panel - Customer Outstanding Only
  */
 async function loadCashBookSummary(start, end) {
     try {
@@ -328,54 +329,96 @@ async function loadCashBookSummary(start, end) {
         const warehouseId = getSelectedWarehouse();
         const startISO = new Date(start.setHours(0, 0, 0, 0)).toISOString();
         const endISO = new Date(end.setHours(23, 59, 59, 999)).toISOString();
-        const startYMD = startISO.split('T')[0];
-        const endYMD = endISO.split('T')[0];
 
-        // Fetch activities within range
-        let salesQuery = window.supabase.from('transactions')
-            .select('created_at, total_amount, customer_name, status, warehouse_id')
+        let custQuery = window.supabase.from('transactions')
+            .select('created_at, total_amount, paid_amount, customer_name')
+            .neq('payment_status', 'Paid')
             .gte('created_at', startISO)
             .lte('created_at', endISO)
             .order('created_at', { ascending: false });
 
         if (warehouseId) {
-            salesQuery = salesQuery.eq('warehouse_id', warehouseId);
+            custQuery = custQuery.eq('warehouse_id', warehouseId);
         }
 
-        let expQuery = window.supabase.from('expenses')
-            .select('created_at, date, amount, item')
-            .gte('date', startYMD)
-            .lte('date', endYMD)
-            .order('date', { ascending: false });
-
-        // Parallelize queries
         const [
-            { data: sales },
-            { data: expenses }
+            { data: custOutstanding },
+            { data: supOutstanding },
+            { data: allCust },
+            { data: allSup },
+            { data: periodSupOutstanding }
         ] = await Promise.all([
-            salesQuery.limit(10000),
-            expQuery.limit(10000)
+            custQuery.limit(10000),
+            window.supabase.from('purchases')
+                .select('created_at, grand_total, paid_amount, supplier_name')
+                .neq('payment_status', 'Paid')
+                .lte('created_at', endISO)
+                .order('created_at', { ascending: false })
+                .limit(10000),
+            window.supabase.from('transactions')
+                .select('total_amount, paid_amount')
+                .neq('payment_status', 'Paid')
+                .lt('created_at', startISO)
+                .limit(10000),
+            window.supabase.from('purchases')
+                .select('grand_total, paid_amount')
+                .neq('payment_status', 'Paid')
+                .lt('created_at', startISO)
+                .limit(10000),
+            window.supabase.from('purchases')
+                .select('grand_total, paid_amount')
+                .neq('payment_status', 'Paid')
+                .gte('created_at', startISO)
+                .lte('created_at', endISO)
+                .limit(10000)
         ]);
 
         const rows = [];
-        (sales || []).forEach(s => {
-            const isReturn = s.status === 'refunded' || s.status === 'cancelled';
-            rows.push({
-                date: s.created_at,
-                particulars: (isReturn ? '[RETURN] ' : 'Sale - ') + (s.customer_name || 'Walk-in'),
-                receipt: isReturn ? 0 : (Number(s.total_amount) || 0),
-                payment: isReturn ? (Number(s.total_amount) || 0) : 0,
-                ts: new Date(s.created_at).getTime()
-            });
+        let openingCustBalance = 0;
+        let openingSupBalance = 0;
+        let periodCustomerTotal = 0;
+        let periodSupplierTotal = 0;
+
+        // Calculate opening balances from all unpaid before selected date
+        openingCustBalance = (allCust || []).reduce((acc, r) => {
+            return acc + (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
+        }, 0);
+
+        openingSupBalance = (allSup || []).reduce((acc, r) => {
+            return acc + (Number(r.grand_total) || 0) - (Number(r.paid_amount) || 0);
+        }, 0);
+
+        // Customer Outstanding items for the period (as Receipt)
+        (custOutstanding || []).forEach(s => {
+            const outstanding = (Number(s.total_amount) || 0) - (Number(s.paid_amount) || 0);
+            if (outstanding > 0) {
+                periodCustomerTotal += outstanding;
+                rows.push({
+                    date: s.created_at,
+                    particulars: s.customer_name || 'Walk-in',
+                    receipt: outstanding,
+                    payment: 0,
+                    type: 'customer',
+                    ts: new Date(s.created_at).getTime()
+                });
+            }
         });
 
-        (expenses || []).forEach(e => rows.push({
-            date: e.date,
-            particulars: 'Exp - ' + (e.item || 'Expense'),
-            receipt: 0,
-            payment: Number(e.amount) || 0,
-            ts: new Date(e.created_at || e.date).getTime()
-        }));
+        // Supplier Outstanding items for the period (as Payment)
+        (periodSupOutstanding || []).forEach(p => {
+            const outstanding = (Number(p.grand_total) || 0) - (Number(p.paid_amount) || 0);
+            if (outstanding > 0) {
+                periodSupplierTotal += outstanding;
+                rows.push({
+                    date: p.created_at,
+                    particulars: p.supplier_name || 'Unknown',
+                    receipt: 0,
+                    payment: outstanding,
+                    type: 'supplier',
+                    ts: new Date(p.created_at).getTime()
+                });
+            }
+        });
 
         rows.sort((a, b) => b.ts - a.ts);
 
@@ -384,33 +427,90 @@ async function loadCashBookSummary(start, end) {
         body.innerHTML = '';
 
         const fmt = n => Number(n || 0).toLocaleString();
-        let totalR = 0, totalP = 0;
+
+        // Display opening balances
+        const elOpeningCust = document.getElementById('opening-customer-balance');
+        const elOpeningSup = document.getElementById('opening-supplier-balance');
+        if (elOpeningCust) elOpeningCust.textContent = fmt(openingCustBalance) + ' KS';
+        if (elOpeningSup) elOpeningSup.textContent = fmt(openingSupBalance) + ' KS';
+
+        // Running balance starting from opening customer - opening supplier
+        let runningBalance = openingCustBalance - openingSupBalance;
 
         rows.forEach(r => {
-            totalR += r.receipt;
-            totalP += r.payment;
+            runningBalance += r.receipt - r.payment;
 
             const tr = document.createElement('tr');
             const dateObj = new Date(r.date);
             const dateLabel = String(dateObj.getDate()).padStart(2, '0') + '-' + dateObj.toLocaleString('en-US', { month: 'short' });
 
             tr.innerHTML = `
-                <td style="text-align:center">${dateLabel}</td>
-                <td>${r.particulars}</td>
-                <td class="val text-green">${r.receipt > 0 ? fmt(r.receipt) : ''}</td>
-                <td class="val text-red">${r.payment > 0 ? fmt(r.payment) : ''}</td>
-                <td class="val">-</td>
+                <td style="text-align:center; font-size:0.8rem; color: var(--text-secondary);">${dateLabel}</td>
+                <td style="font-size:0.85rem; color: var(--text-main);">${r.particulars}</td>
+                <td class="val" style="color: var(--primary-light); font-weight: 600;">${r.receipt > 0 ? fmt(r.receipt) : ''}</td>
+                <td class="val" style="color: var(--primary); font-weight: 600;">${r.payment > 0 ? fmt(r.payment) : ''}</td>
+                <td class="val" style="color: var(--primary-light); font-weight: 700;">${fmt(runningBalance)}</td>
             `;
             body.appendChild(tr);
         });
 
-        document.getElementById('cash-total-receipt').textContent = fmt(totalR);
-        document.getElementById('cash-total-payment').textContent = fmt(totalP);
-        document.getElementById('cash-current-balance').textContent = fmt(totalR - totalP);
-        document.getElementById('cash-final-balance').textContent = fmt(totalR - totalP) + ' KS';
+        // Add empty row message if no outstanding items
+        if (rows.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td colspan="5" style="text-align:center; padding:40px; color: var(--text-secondary); font-size:0.85rem;">
+                    No outstanding items found for this period
+                </td>
+            `;
+            body.appendChild(tr);
+        }
+
+        // Calculate closing balances
+        const closingCustBalance = openingCustBalance + periodCustomerTotal;
+        const closingSupBalance = openingSupBalance + periodSupplierTotal;
+
+        // Display closing balances
+        const elClosingCust = document.getElementById('closing-customer-balance');
+        const elClosingSup = document.getElementById('closing-supplier-balance');
+        if (elClosingCust) elClosingCust.textContent = fmt(closingCustBalance) + ' KS';
+        if (elClosingSup) elClosingSup.textContent = fmt(closingSupBalance) + ' KS';
 
     } catch (e) {
         console.error('Error loading cash book summary:', e);
+    }
+}
+
+/**
+ * Load Customer & Supplier Outstanding Summary
+ */
+async function loadOutstandingSummary() {
+    try {
+        const [{ data: unpaidCust }, { data: unpaidSup }] = await Promise.all([
+            window.supabase.from('transactions')
+                .select('total_amount, paid_amount')
+                .neq('payment_status', 'Paid')
+                .limit(10000),
+            window.supabase.from('purchases')
+                .select('grand_total, paid_amount')
+                .neq('payment_status', 'Paid')
+                .limit(10000)
+        ]);
+
+        const fmt = n => Number(n || 0).toLocaleString();
+
+        const custOutstanding = (unpaidCust || []).reduce((acc, r) => {
+            return acc + (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
+        }, 0);
+
+        const supOutstanding = (unpaidSup || []).reduce((acc, r) => {
+            return acc + (Number(r.grand_total) || 0) - (Number(r.paid_amount) || 0);
+        }, 0);
+
+        document.getElementById('cash-customer-outstanding').textContent = fmt(custOutstanding);
+        document.getElementById('cash-supplier-outstanding').textContent = fmt(supOutstanding);
+
+    } catch (e) {
+        console.error('Error loading outstanding summary:', e);
     }
 }
 
