@@ -330,6 +330,7 @@ async function loadCashBookSummary(start, end) {
         const startISO = new Date(start.setHours(0, 0, 0, 0)).toISOString();
         const endISO = new Date(end.setHours(23, 59, 59, 999)).toISOString();
 
+        // Query customer outstanding transactions (unpaid)
         let custQuery = window.supabase.from('transactions')
             .select('created_at, total_amount, paid_amount, customer_name')
             .neq('payment_status', 'Paid')
@@ -341,51 +342,31 @@ async function loadCashBookSummary(start, end) {
             custQuery = custQuery.eq('warehouse_id', warehouseId);
         }
 
+        // Query all unpaid customer transactions before period (for opening balance)
+        let custOpeningQuery = window.supabase.from('transactions')
+            .select('total_amount, paid_amount')
+            .neq('payment_status', 'Paid')
+            .lt('created_at', startISO);
+
+        if (warehouseId) {
+            custOpeningQuery = custOpeningQuery.eq('warehouse_id', warehouseId);
+        }
+
         const [
             { data: custOutstanding },
-            { data: supOutstanding },
-            { data: allCust },
-            { data: allSup },
-            { data: periodSupOutstanding }
+            { data: allCust }
         ] = await Promise.all([
             custQuery.limit(10000),
-            window.supabase.from('purchases')
-                .select('created_at, grand_total, paid_amount, supplier_name')
-                .neq('payment_status', 'Paid')
-                .lte('created_at', endISO)
-                .order('created_at', { ascending: false })
-                .limit(10000),
-            window.supabase.from('transactions')
-                .select('total_amount, paid_amount')
-                .neq('payment_status', 'Paid')
-                .lt('created_at', startISO)
-                .limit(10000),
-            window.supabase.from('purchases')
-                .select('grand_total, paid_amount')
-                .neq('payment_status', 'Paid')
-                .lt('created_at', startISO)
-                .limit(10000),
-            window.supabase.from('purchases')
-                .select('grand_total, paid_amount')
-                .neq('payment_status', 'Paid')
-                .gte('created_at', startISO)
-                .lte('created_at', endISO)
-                .limit(10000)
+            custOpeningQuery.limit(10000)
         ]);
 
         const rows = [];
         let openingCustBalance = 0;
-        let openingSupBalance = 0;
         let periodCustomerTotal = 0;
-        let periodSupplierTotal = 0;
 
-        // Calculate opening balances from all unpaid before selected date
+        // Calculate opening balance from all unpaid before selected date
         openingCustBalance = (allCust || []).reduce((acc, r) => {
             return acc + (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
-        }, 0);
-
-        openingSupBalance = (allSup || []).reduce((acc, r) => {
-            return acc + (Number(r.grand_total) || 0) - (Number(r.paid_amount) || 0);
         }, 0);
 
         // Customer Outstanding items for the period (as Receipt)
@@ -404,22 +385,6 @@ async function loadCashBookSummary(start, end) {
             }
         });
 
-        // Supplier Outstanding items for the period (as Payment)
-        (periodSupOutstanding || []).forEach(p => {
-            const outstanding = (Number(p.grand_total) || 0) - (Number(p.paid_amount) || 0);
-            if (outstanding > 0) {
-                periodSupplierTotal += outstanding;
-                rows.push({
-                    date: p.created_at,
-                    particulars: p.supplier_name || 'Unknown',
-                    receipt: 0,
-                    payment: outstanding,
-                    type: 'supplier',
-                    ts: new Date(p.created_at).getTime()
-                });
-            }
-        });
-
         rows.sort((a, b) => b.ts - a.ts);
 
         const body = document.getElementById('cash-body');
@@ -428,14 +393,14 @@ async function loadCashBookSummary(start, end) {
 
         const fmt = n => Number(n || 0).toLocaleString();
 
-        // Display opening balances
+        // Display opening customer balance
         const elOpeningCust = document.getElementById('opening-customer-balance');
         const elOpeningSup = document.getElementById('opening-supplier-balance');
         if (elOpeningCust) elOpeningCust.textContent = fmt(openingCustBalance) + ' KS';
-        if (elOpeningSup) elOpeningSup.textContent = fmt(openingSupBalance) + ' KS';
+        if (elOpeningSup) elOpeningSup.textContent = '0 KS';
 
-        // Running balance starting from opening customer - opening supplier
-        let runningBalance = openingCustBalance - openingSupBalance;
+        // Running balance starting from opening customer
+        let runningBalance = openingCustBalance;
 
         rows.forEach(r => {
             runningBalance += r.receipt - r.payment;
@@ -459,21 +424,19 @@ async function loadCashBookSummary(start, end) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td colspan="5" style="text-align:center; padding:40px; color: var(--text-secondary); font-size:0.85rem;">
-                    No outstanding items found for this period
+                    No customer outstanding items found for this period
                 </td>
             `;
             body.appendChild(tr);
         }
 
-        // Calculate closing balances
+        // Calculate and display closing customer balance
         const closingCustBalance = openingCustBalance + periodCustomerTotal;
-        const closingSupBalance = openingSupBalance + periodSupplierTotal;
 
-        // Display closing balances
         const elClosingCust = document.getElementById('closing-customer-balance');
         const elClosingSup = document.getElementById('closing-supplier-balance');
         if (elClosingCust) elClosingCust.textContent = fmt(closingCustBalance) + ' KS';
-        if (elClosingSup) elClosingSup.textContent = fmt(closingSupBalance) + ' KS';
+        if (elClosingSup) elClosingSup.textContent = '0 KS';
 
     } catch (e) {
         console.error('Error loading cash book summary:', e);
